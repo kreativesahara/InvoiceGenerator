@@ -304,7 +304,8 @@ Public Class FrmProformaInvoice
             .Size = New Size(80, 30),
             .BackColor = Color.FromArgb(52, 73, 94),
             .ForeColor = Color.White,
-            .FlatStyle = FlatStyle.Flat
+            .FlatStyle = FlatStyle.Flat,
+            .Enabled = False ' disabled until there is at least one item and UI is enabled
         }
         AddHandler btnPrint.Click, AddressOf btnPrint_Click
 
@@ -335,6 +336,7 @@ Public Class FrmProformaInvoice
         AddHandler dgvInvoiceItems.CellValueChanged, AddressOf dgvInvoiceItems_CellValueChanged
         AddHandler dgvInvoiceItems.RowsAdded, AddressOf dgvInvoiceItems_RowsAdded
         AddHandler dgvInvoiceItems.UserDeletedRow, AddressOf dgvInvoiceItems_UserDeletedRow
+        AddHandler dgvInvoiceItems.RowsRemoved, AddressOf dgvInvoiceItems_RowsAdded ' reuse handler to recalc
 
         ' === Trial update timer (checks once per day) ===
         trialTimer = New Timer()
@@ -342,6 +344,8 @@ Public Class FrmProformaInvoice
         trialTimer.Interval = 24 * 60 * 60 * 1000
         AddHandler trialTimer.Tick, AddressOf TrialTimer_Tick
         trialTimer.Start()
+        ' Ensure initial print button state
+        UpdatePrintButtonState()
     End Sub
 
     ' === Auto Calculation ===
@@ -358,6 +362,7 @@ Public Class FrmProformaInvoice
             End If
         Next
         txtTotalCost.Text = total.ToString("N2")
+        UpdatePrintButtonState()
     End Sub
 
     Private Sub dgvInvoiceItems_CellValueChanged(sender As Object, e As DataGridViewCellEventArgs)
@@ -369,6 +374,10 @@ Public Class FrmProformaInvoice
     End Sub
 
     Private Sub dgvInvoiceItems_UserDeletedRow(sender As Object, e As DataGridViewRowEventArgs)
+        RecalculateTotal()
+    End Sub
+
+    Private Sub dgvInvoiceItems_RowsRemoved(sender As Object, e As DataGridViewRowsRemovedEventArgs)
         RecalculateTotal()
     End Sub
 
@@ -423,11 +432,26 @@ Public Class FrmProformaInvoice
         If MessageBox.Show("Clear all invoice items?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
             dgvInvoiceItems.Rows.Clear()
             txtTotalCost.Text = "0.00"
+            UpdatePrintButtonState()
         End If
     End Sub
 
     ' === Print Logic ===
     Private Sub btnPrint_Click(sender As Object, e As EventArgs)
+        ' Prevent printing when there are no items
+        Dim hasItems As Boolean = False
+        For Each r As DataGridViewRow In dgvInvoiceItems.Rows
+            If Not r.IsNewRow Then
+                hasItems = True
+                Exit For
+            End If
+        Next
+        If Not hasItems Then
+            MessageBox.Show("No items to print.", "Print", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            UpdatePrintButtonState()
+            Return
+        End If
+
         PrintPreviewDialog1.ShowDialog()
     End Sub
 
@@ -617,7 +641,12 @@ Public Class FrmProformaInvoice
         btnAddItem.Enabled = enabled
         btnRemoveLine.Enabled = enabled
         btnResetAll.Enabled = enabled
-        btnPrint.Enabled = enabled
+        ' keep print enabled only if UI licensed and there are items
+        If enabled Then
+            UpdatePrintButtonState()
+        Else
+            btnPrint.Enabled = False
+        End If
         dgvInvoiceItems.Enabled = enabled
     End Sub
 
@@ -657,12 +686,32 @@ Public Class FrmProformaInvoice
             If LicenseManager.IsLicensed(clientId, expiryUtc) Then
                 MessageBox.Show("License installed. Expires: " & expiryUtc.ToLocalTime().ToString("yyyy-MM-dd"), "License Installed", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 ApplyLicensedState(True)
+                UpdateTrialLabel()
+                UpdatePrintButtonState()
             Else
                 MessageBox.Show("License is invalid or does not match this Client ID.", "Invalid License", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 ApplyLicensedState(False)
             End If
         Catch ex As Exception
             MessageBox.Show("Failed to install license: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ' Enable/disable Print button depending on whether there are items in the grid and UI state
+    Private Sub UpdatePrintButtonState()
+        Try
+            If btnPrint Is Nothing OrElse dgvInvoiceItems Is Nothing Then Return
+            Dim hasItems As Boolean = False
+            For Each r As DataGridViewRow In dgvInvoiceItems.Rows
+                If Not r.IsNewRow Then
+                    hasItems = True
+                    Exit For
+                End If
+            Next
+            ' Only enable print if UI is enabled (licensed/trial) and there are items
+            btnPrint.Enabled = hasItems AndAlso contentPanel.Enabled
+        Catch
+            ' ignore
         End Try
     End Sub
 End Class
