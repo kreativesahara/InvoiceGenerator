@@ -47,6 +47,10 @@ Public Class FrmProformaInvoice
     ' Trial status UI
     Private lblTrialStatus As Label
 
+    ' UI helpers
+    Private toolTip1 As ToolTip
+    Private btnPrintDefaultBackColor As Color
+
     ' Local client identifier
     Private clientId As String
 
@@ -58,6 +62,7 @@ Public Class FrmProformaInvoice
         EnsureClientId()
         UpdateClientIdDisplay()
         UpdateTrialLabel()
+        UpdatePrintButtonState()
         AddHandler Me.Load, AddressOf FrmProformaInvoice_Load
     End Sub
 
@@ -309,6 +314,11 @@ Public Class FrmProformaInvoice
         }
         AddHandler btnPrint.Click, AddressOf btnPrint_Click
 
+        ' store default print button color and tooltip
+        btnPrintDefaultBackColor = btnPrint.BackColor
+        toolTip1 = New ToolTip()
+        toolTip1.SetToolTip(btnPrint, "Add at least one item to enable printing")
+
         ' Load/Paste License button
         btnLoadLicense = New Button With {
             .Text = "Load License",
@@ -336,7 +346,7 @@ Public Class FrmProformaInvoice
         AddHandler dgvInvoiceItems.CellValueChanged, AddressOf dgvInvoiceItems_CellValueChanged
         AddHandler dgvInvoiceItems.RowsAdded, AddressOf dgvInvoiceItems_RowsAdded
         AddHandler dgvInvoiceItems.UserDeletedRow, AddressOf dgvInvoiceItems_UserDeletedRow
-        AddHandler dgvInvoiceItems.RowsRemoved, AddressOf dgvInvoiceItems_RowsAdded ' reuse handler to recalc
+        AddHandler dgvInvoiceItems.RowsRemoved, AddressOf dgvInvoiceItems_RowsRemoved
 
         ' === Trial update timer (checks once per day) ===
         trialTimer = New Timer()
@@ -700,7 +710,9 @@ Public Class FrmProformaInvoice
     ' Enable/disable Print button depending on whether there are items in the grid and UI state
     Private Sub UpdatePrintButtonState()
         Try
-            If btnPrint Is Nothing OrElse dgvInvoiceItems Is Nothing Then Return
+            If btnPrint Is Nothing OrElse dgvInvoiceItems Is Nothing Then
+                Return
+            End If
             Dim hasItems As Boolean = False
             For Each r As DataGridViewRow In dgvInvoiceItems.Rows
                 If Not r.IsNewRow Then
@@ -708,8 +720,48 @@ Public Class FrmProformaInvoice
                     Exit For
                 End If
             Next
-            ' Only enable print if UI is enabled (licensed/trial) and there are items
-            btnPrint.Enabled = hasItems AndAlso contentPanel.Enabled
+            ' When the overall UI is disabled (trial expired / not licensed) keep the button disabled
+            Dim uiEnabled = contentPanel.Enabled
+            If Not uiEnabled Then
+                btnPrint.Enabled = False
+                btnPrint.BackColor = Color.Gray
+                btnPrint.ForeColor = Color.LightGray
+                btnPrint.Cursor = Cursors.Default
+                toolTip1.SetToolTip(btnPrint, "Application not licensed or trial expired")
+                Return
+            End If
+
+            ' UI is enabled: keep the control Enabled so ToolTip shows even when there are no items
+            btnPrint.Enabled = True
+            If hasItems Then
+                ' normal enabled appearance
+                btnPrint.BackColor = btnPrintDefaultBackColor
+                btnPrint.ForeColor = Color.White
+                btnPrint.Cursor = Cursors.Default
+                toolTip1.SetToolTip(btnPrint, "Print preview and print the invoice")
+            Else
+                ' visually disabled but enabled to allow tooltip to show
+                btnPrint.BackColor = Color.Gray
+                btnPrint.ForeColor = Color.LightGray
+                btnPrint.Cursor = Cursors.No
+                toolTip1.SetToolTip(btnPrint, "Add at least one item to enable printing")
+            End If
+
+            ' Also disable/enable PrintPreviewDialog controls (ToolStrip and PreviewControl)
+            Try
+                If PrintPreviewDialog1 IsNot Nothing Then
+                    If PrintPreviewDialog1.PrintPreviewControl IsNot Nothing Then
+                        PrintPreviewDialog1.PrintPreviewControl.Enabled = hasItems
+                    End If
+                    For Each c As Control In PrintPreviewDialog1.Controls
+                        If TypeOf c Is ToolStrip Then
+                            c.Enabled = hasItems
+                        End If
+                    Next
+                End If
+            Catch
+                ' ignore
+            End Try
         Catch
             ' ignore
         End Try
