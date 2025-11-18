@@ -44,13 +44,20 @@ Public Class FrmProformaInvoice
     Private lblClientIdLabel As Label
     Private lblClientIdValue As Label
 
+    ' Trial status UI
+    Private lblTrialStatus As Label
+
     ' Local client identifier
     Private clientId As String
+
+    ' Timer to update trial label daily
+    Private trialTimer As Timer
 
     Public Sub New()
         InitializeComponent()
         EnsureClientId()
         UpdateClientIdDisplay()
+        UpdateTrialLabel()
         AddHandler Me.Load, AddressOf FrmProformaInvoice_Load
     End Sub
 
@@ -105,6 +112,15 @@ Public Class FrmProformaInvoice
             .AutoSize = True
         }
 
+        ' trial status label (below client id)
+        lblTrialStatus = New Label With {
+            .Text = "",
+            .Font = New Font("Segoe UI", 8, FontStyle.Italic),
+            .Location = New Point(520, 90),
+            .AutoSize = True,
+            .ForeColor = Color.DarkRed
+        }
+
         ' ComboBox to allow editing/selecting invoice type; placed in header
         cmbInvoiceType = New ComboBox With {
             .Location = New Point(520, 40),
@@ -115,7 +131,7 @@ Public Class FrmProformaInvoice
         cmbInvoiceType.Text = lblInvoiceTitle.Text
         AddHandler cmbInvoiceType.TextChanged, AddressOf cmbInvoiceType_TextChanged
 
-        PanelHeader.Controls.AddRange({lblCompanyName, lblCompanyDetails, lblInvoiceTitle, lblClientIdLabel, lblClientIdValue})
+        PanelHeader.Controls.AddRange({lblCompanyName, lblCompanyDetails, lblInvoiceTitle, lblClientIdLabel, lblClientIdValue, lblTrialStatus})
         PanelHeader.Controls.Add(cmbInvoiceType)
 
         ' === Content panel with AutoScroll to allow overlapping elements ===
@@ -319,6 +335,13 @@ Public Class FrmProformaInvoice
         AddHandler dgvInvoiceItems.CellValueChanged, AddressOf dgvInvoiceItems_CellValueChanged
         AddHandler dgvInvoiceItems.RowsAdded, AddressOf dgvInvoiceItems_RowsAdded
         AddHandler dgvInvoiceItems.UserDeletedRow, AddressOf dgvInvoiceItems_UserDeletedRow
+
+        ' === Trial update timer (checks once per day) ===
+        trialTimer = New Timer()
+        ' 24 hours in milliseconds
+        trialTimer.Interval = 24 * 60 * 60 * 1000
+        AddHandler trialTimer.Tick, AddressOf TrialTimer_Tick
+        trialTimer.Start()
     End Sub
 
     ' === Auto Calculation ===
@@ -502,6 +525,61 @@ Public Class FrmProformaInvoice
         End Try
     End Sub
 
+    ' Update the trial/license status label
+    Private Sub UpdateTrialLabel()
+        Try
+            If lblTrialStatus Is Nothing Then Return
+            LicenseManager.EnsureAppFolder()
+
+            If LicenseManager.IsTrialActive() Then
+                Dim daysLeft = LicenseManager.TrialDaysLeft()
+                lblTrialStatus.Text = "Free trial — " & daysLeft & " day(s) left"
+                lblTrialStatus.ForeColor = Color.DarkGreen
+                Return
+            End If
+
+            ' If not trial, check license file and show expiry or status
+            Dim expiry As DateTime = DateTime.MinValue
+            Dim licensedClient As String = String.Empty
+            If LicenseManager.TryValidateLicense(expiry, licensedClient) Then
+                Dim display = expiry.ToLocalTime().ToString("yyyy-MM-dd")
+                If Not String.IsNullOrEmpty(clientId) AndAlso String.Equals(clientId, licensedClient, StringComparison.OrdinalIgnoreCase) Then
+                    lblTrialStatus.Text = "Licensed until " & display
+                    lblTrialStatus.ForeColor = Color.DarkBlue
+                Else
+                    lblTrialStatus.Text = "License installed (for other client) until " & display
+                    lblTrialStatus.ForeColor = Color.OrangeRed
+                End If
+            Else
+                lblTrialStatus.Text = "Trial expired — license required"
+                lblTrialStatus.ForeColor = Color.DarkRed
+            End If
+        Catch
+            ' ignore UI update errors
+        End Try
+    End Sub
+
+    ' Timer tick: update trial label and enforce inactive state when needed
+    Private Sub TrialTimer_Tick(sender As Object, e As EventArgs)
+        Try
+            ' Refresh label
+            UpdateTrialLabel()
+
+            ' If trial expired and not licensed, disable UI
+            If Not LicenseManager.IsTrialActive() Then
+                Dim expiryUtc As DateTime = DateTime.MinValue
+                If Not LicenseManager.IsLicensed(clientId, expiryUtc) Then
+                    ' ensure UI is disabled and inform user
+                    ApplyLicensedState(False)
+                    ' notify once (avoid spamming) - show a simple message box
+                    MessageBox.Show("Trial expired. Please install a valid license to continue using the application.", "License Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                End If
+            End If
+        Catch
+            ' ignore timer errors
+        End Try
+    End Sub
+
     ' === License / Trial handling on load ===
     Private Sub FrmProformaInvoice_Load(sender As Object, e As EventArgs)
         Try
@@ -509,7 +587,9 @@ Public Class FrmProformaInvoice
             If LicenseManager.IsTrialActive() Then
                 Dim daysLeft = LicenseManager.TrialDaysLeft()
                 If daysLeft <= 7 Then
-                    MessageBox.Show("Trial will expire in " & daysLeft & " day(s). After that a signed license file will be required.", "Trial Notice", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    MessageBox.Show("Trial will expire in " & daysLeft &
+                                    " day(s). After that a signed license file will be required.
+                                    ", "Trial Notice", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 End If
                 ApplyLicensedState(True)
                 Return
