@@ -1,4 +1,5 @@
 Imports System.Drawing.Printing
+Imports System.IO
 
 Public Class FrmProformaInvoice
     Inherits Form
@@ -37,8 +38,12 @@ Public Class FrmProformaInvoice
     Private btnRemoveLine As Button
     Private btnResetAll As Button
 
+    ' Local client identifier
+    Private clientId As String
+
     Public Sub New()
         InitializeComponent()
+        EnsureClientId()
     End Sub
 
     Private Sub InitializeComponent()
@@ -324,22 +329,18 @@ Public Class FrmProformaInvoice
             MessageBox.Show("Please enter a description.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
-
         If qty <= 0 OrElse unitPrice < 0 Then
             MessageBox.Show("Please enter valid quantity and unit price.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
-
         Dim amount = qty * unitPrice
 
         Dim itemNo As String = itemNoText
         If String.IsNullOrWhiteSpace(itemNo) Then
             itemNo = (dgvInvoiceItems.Rows.Count + 1).ToString()
         End If
-
         dgvInvoiceItems.Rows.Add(itemNo, description, qty.ToString(), unitPrice.ToString("N2"), amount.ToString("N2"))
         RecalculateTotal()
-
         ' Clear inputs
         txtItemNo.Clear()
         txtDescription.Clear()
@@ -427,5 +428,28 @@ Public Class FrmProformaInvoice
         If cmbInvoiceType IsNot Nothing AndAlso lblInvoiceTitle IsNot Nothing Then
             lblInvoiceTitle.Text = cmbInvoiceType.Text
         End If
+    End Sub
+
+    ' Ensure a local client identifier exists and is stored in AppData
+    Private Sub EnsureClientId()
+        Try
+            Dim appFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "InvoiceGenerator")
+            If Not Directory.Exists(appFolder) Then Directory.CreateDirectory(appFolder)
+            Dim clientFile = Path.Combine(appFolder, "clientid.txt")
+            If File.Exists(clientFile) Then
+                Dim content = File.ReadAllText(clientFile).Trim()
+                If Not String.IsNullOrEmpty(content) Then
+                    clientId = content
+                    Return
+                End If
+            End If
+
+            ' create and persist a new GUID
+            clientId = Guid.NewGuid().ToString()
+            File.WriteAllText(clientFile, clientId)
+        Catch ex As Exception
+            ' If writing fails, keep clientId empty - do not crash the form
+            clientId = String.Empty
+        End Try
     End Sub
 End Class
