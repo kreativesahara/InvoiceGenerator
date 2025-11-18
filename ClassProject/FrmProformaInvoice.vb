@@ -1,5 +1,6 @@
 Imports System.Drawing.Printing
 Imports System.IO
+Imports Microsoft.VisualBasic
 
 Public Class FrmProformaInvoice
     Inherits Form
@@ -37,6 +38,11 @@ Public Class FrmProformaInvoice
     ' New footer controls
     Private btnRemoveLine As Button
     Private btnResetAll As Button
+    Private btnLoadLicense As Button
+
+    ' Client ID UI
+    Private lblClientIdLabel As Label
+    Private lblClientIdValue As Label
 
     ' Local client identifier
     Private clientId As String
@@ -44,6 +50,8 @@ Public Class FrmProformaInvoice
     Public Sub New()
         InitializeComponent()
         EnsureClientId()
+        UpdateClientIdDisplay()
+        AddHandler Me.Load, AddressOf FrmProformaInvoice_Load
     End Sub
 
     Private Sub InitializeComponent()
@@ -83,6 +91,20 @@ Public Class FrmProformaInvoice
             .AutoSize = True
         }
 
+        ' small labels to show the ClientID
+        lblClientIdLabel = New Label With {
+            .Text = "Client ID:",
+            .Font = New Font("Segoe UI", 8, FontStyle.Regular),
+            .Location = New Point(520, 70),
+            .AutoSize = True
+        }
+        lblClientIdValue = New Label With {
+            .Text = "Generating...",
+            .Font = New Font("Segoe UI", 8, FontStyle.Regular),
+            .Location = New Point(580, 70),
+            .AutoSize = True
+        }
+
         ' ComboBox to allow editing/selecting invoice type; placed in header
         cmbInvoiceType = New ComboBox With {
             .Location = New Point(520, 40),
@@ -93,7 +115,7 @@ Public Class FrmProformaInvoice
         cmbInvoiceType.Text = lblInvoiceTitle.Text
         AddHandler cmbInvoiceType.TextChanged, AddressOf cmbInvoiceType_TextChanged
 
-        PanelHeader.Controls.AddRange({lblCompanyName, lblCompanyDetails, lblInvoiceTitle})
+        PanelHeader.Controls.AddRange({lblCompanyName, lblCompanyDetails, lblInvoiceTitle, lblClientIdLabel, lblClientIdValue})
         PanelHeader.Controls.Add(cmbInvoiceType)
 
         ' === Content panel with AutoScroll to allow overlapping elements ===
@@ -270,13 +292,25 @@ Public Class FrmProformaInvoice
         }
         AddHandler btnPrint.Click, AddressOf btnPrint_Click
 
+        ' Load/Paste License button
+        btnLoadLicense = New Button With {
+            .Text = "Load License",
+            .Font = New Font("Segoe UI", 9, FontStyle.Regular),
+            .Location = New Point(740, 680),
+            .Size = New Size(120, 28),
+            .BackColor = Color.FromArgb(46, 204, 113),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat
+        }
+        AddHandler btnLoadLicense.Click, AddressOf btnLoadLicense_Click
+
         ' === Print Setup ===
         PrintDocument1 = New PrintDocument()
         PrintPreviewDialog1 = New PrintPreviewDialog() With {.Document = PrintDocument1, .Width = 800, .Height = 600}
         AddHandler PrintDocument1.PrintPage, AddressOf PrintDocument1_PrintPage
 
         ' === Add Controls to contentPanel ===
-        contentPanel.Controls.AddRange({lblBilledTo, txtBilledTo, lblAddress, txtAddress, lblInvoiceDate, dtpInvoiceDate, lblInvoiceSerial, txtInvoiceSerial, grpProductEntry, dgvInvoiceItems, lblTotalCost, txtTotalCost, lblNote, txtNote, lblThanks, txtThanks, btnRemoveLine, btnResetAll, btnPrint})
+        contentPanel.Controls.AddRange({lblBilledTo, txtBilledTo, lblAddress, txtAddress, lblInvoiceDate, dtpInvoiceDate, lblInvoiceSerial, txtInvoiceSerial, grpProductEntry, dgvInvoiceItems, lblTotalCost, txtTotalCost, lblNote, txtNote, lblThanks, txtThanks, btnRemoveLine, btnResetAll, btnLoadLicense, btnPrint})
 
         ' === Add header and contentPanel to Form ===
         Me.Controls.AddRange({PanelHeader, contentPanel})
@@ -450,6 +484,105 @@ Public Class FrmProformaInvoice
         Catch ex As Exception
             ' If writing fails, keep clientId empty - do not crash the form
             clientId = String.Empty
+        End Try
+    End Sub
+
+    ' Update the client id label in UI
+    Private Sub UpdateClientIdDisplay()
+        Try
+            If lblClientIdValue IsNot Nothing Then
+                If String.IsNullOrEmpty(clientId) Then
+                    lblClientIdValue.Text = "N/A"
+                Else
+                    lblClientIdValue.Text = clientId
+                End If
+            End If
+        Catch
+            ' ignore
+        End Try
+    End Sub
+
+    ' === License / Trial handling on load ===
+    Private Sub FrmProformaInvoice_Load(sender As Object, e As EventArgs)
+        Try
+            LicenseManager.EnsureAppFolder()
+            If LicenseManager.IsTrialActive() Then
+                Dim daysLeft = LicenseManager.TrialDaysLeft()
+                If daysLeft <= 7 Then
+                    MessageBox.Show("Trial will expire in " & daysLeft & " day(s). After that a signed license file will be required.", "Trial Notice", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                End If
+                ApplyLicensedState(True)
+                Return
+            End If
+
+            ' Trial expired - check license matching client id
+            Dim expiryUtc As DateTime = DateTime.MinValue
+            If LicenseManager.IsLicensed(clientId, expiryUtc) Then
+                ApplyLicensedState(True)
+                Return
+            End If
+
+            ' not licensed
+            MessageBox.Show("Trial expired. Place a signed license file named 'license.lic' in: " & LicenseManager.AppFolder & vbCrLf & vbCrLf & "Contact the vendor to obtain a signed license (RSA-signed payload containing an expiry date and matching ClientID).", "License Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            ApplyLicensedState(False)
+        Catch ex As Exception
+            MessageBox.Show("License check failed: " & ex.Message, "License Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            ApplyLicensedState(False)
+        End Try
+    End Sub
+
+    Private Sub ApplyLicensedState(enabled As Boolean)
+        contentPanel.Enabled = enabled
+        PanelHeader.Enabled = enabled
+        btnAddItem.Enabled = enabled
+        btnRemoveLine.Enabled = enabled
+        btnResetAll.Enabled = enabled
+        btnPrint.Enabled = enabled
+        dgvInvoiceItems.Enabled = enabled
+    End Sub
+
+    ' Load or paste a license file, save to AppData and validate
+    Private Sub btnLoadLicense_Click(sender As Object, e As EventArgs)
+        Try
+            LicenseManager.EnsureAppFolder()
+
+            ' First allow pasting via InputBox
+            Dim pastePrompt = "Paste the license content here (two lines: payload and base64 signature). Leave empty to pick a file..."
+            Dim pasted = Interaction.InputBox(pastePrompt, "Paste License", "")
+            Dim licenseText As String = String.Empty
+
+            If Not String.IsNullOrWhiteSpace(pasted) Then
+                licenseText = pasted
+            Else
+                Using ofd As New OpenFileDialog()
+                    ofd.Filter = "License files (*.lic)|*.lic|All files (*.*)|*.*"
+                    ofd.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                    If ofd.ShowDialog() = DialogResult.OK Then
+                        licenseText = File.ReadAllText(ofd.FileName)
+                    Else
+                        Return
+                    End If
+                End Using
+            End If
+
+            If String.IsNullOrWhiteSpace(licenseText) Then
+                MessageBox.Show("No license content provided.", "Load License", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+
+            Dim target = Path.Combine(LicenseManager.AppFolder, "license.lic")
+            File.WriteAllText(target, licenseText)
+
+            Dim expiryUtc As DateTime = DateTime.MinValue
+            If LicenseManager.IsLicensed(clientId, expiryUtc) Then
+                MessageBox.Show("License installed. Expires: " & expiryUtc.ToLocalTime().ToString("yyyy-MM-dd"), "License Installed", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                ApplyLicensedState(True)
+            Else
+                MessageBox.Show("License is invalid or does not match this Client ID.", "Invalid License", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                ApplyLicensedState(False)
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Failed to install license: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class
