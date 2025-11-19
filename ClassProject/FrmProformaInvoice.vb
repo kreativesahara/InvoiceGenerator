@@ -68,7 +68,7 @@ Public Class FrmProformaInvoice
 
     Private Sub InitializeComponent()
         ' === Form ===
-        Me.Text = "Proforma Invoice"
+        Me.Text = "Invoice Generator"
         Me.ClientSize = New Size(1000, 750)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
@@ -132,7 +132,7 @@ Public Class FrmProformaInvoice
             .Width = 180,
             .DropDownStyle = ComboBoxStyle.DropDown ' allow typing custom value
         }
-        cmbInvoiceType.Items.AddRange(New Object() {"PROFORMA INVOICE", "TAX INVOICE", "QUOTATION", "CREDIT NOTE", "DEBIT NOTE"})
+        cmbInvoiceType.Items.AddRange(New Object() {"PROFORMA INVOICE", "TAX INVOICE", "QUOTATION", "CREDIT NOTE", "DEBIT NOTE", "CASH SALE"})
         cmbInvoiceType.Text = lblInvoiceTitle.Text
         AddHandler cmbInvoiceType.TextChanged, AddressOf cmbInvoiceType_TextChanged
 
