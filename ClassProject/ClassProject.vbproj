@@ -5,13 +5,13 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{7DBB3671-A958-4EE4-8B5B-56A249B4AF58}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
-    <StartupObject>ClassProject.My.MyApplication</StartupObject>
+    <OutputType>Exe</OutputType>
+    <StartupObject>ClassProject.LicenseGenerator</StartupObject>
     <RootNamespace>ClassProject</RootNamespace>
     <AssemblyName>Invoice Generator v1.0.0</AssemblyName>
     <FileAlignment>512</FileAlignment>
-    <MyType>WindowsForms</MyType>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <MyType>Console</MyType>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <TargetFrameworkProfile />

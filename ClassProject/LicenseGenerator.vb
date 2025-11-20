@@ -30,7 +30,7 @@ Module LicenseGenerator
         Console.WriteLine()
         Console.WriteLine("Commands:")
         Console.WriteLine("  genkeys <privateOut.xml> <publicOut.xml>   - generate RSA4096 keypair and save XML")
-        Console.WriteLine("  makelic <privateKey.xml> <clientId> <expiry-iso8601> [out.lic]    - make license file")
+        Console.WriteLine("  makelic <privateKey.xml> <clientId> <expiry-iso8601> [licence.lic]    - make license file")
         Console.WriteLine()
         Console.WriteLine("Examples:")
         Console.WriteLine("  LicenseGenerator genkeys vendor_private.xml vendor_public.xml")
