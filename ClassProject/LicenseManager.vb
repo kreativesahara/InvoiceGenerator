@@ -13,7 +13,10 @@ Friend NotInheritable Class LicenseManager
     Private Shared ReadOnly LicenseFilePath As String = Path.Combine(AppFolder, "license.lic")
 
     ' Replace this with your vendor/public RSA key XML (ToXmlString(False) style)
-    Private Shared ReadOnly PublicKeyXml As String = "<RSAKeyValue>REPLACE_WITH_VENDOR_PUBLIC_KEY_XML</RSAKeyValue>"
+    Private Shared ReadOnly PublicKeyXml As String = "<RSAKeyValue>
+<Modulus>wlHBheuDwPbMWJb25PzuDM0A1ecSHpGJHSVBKXSPX5bIUY6chjyEnPRuZlGLXVFSdU48T/ae19AMDw9kGePzFNS1UFpBelLgRJoZ1AaMvb+t/N/YBlQfflzKjslfMufgCzVh8nN3IboOLlBlVetmhU2Bt+KXe3PYVbRj8CiZn9X594zT9I3qwZ7nbn7w2eo7xu0VDrRAbQ2lhstDyFJrfqB56sBYjGx8lRPBhBwPpMjEJwEh26+JVJgueTsrgob4YUEa9iXFW46KngEqIpcWGYtekl8nt/NKjnf3DummK+kKfC9RYbhFToFS/5GtTezrpDFIVPAd8eYUOgsL4M8Q+WpFpBUL2gL6HgkPTVnvncP89pcN4OLDizlYoctJdws+3su5yax/N+YUnNBP+w2GDF2QowISYYvfzFr05zQw1l6vkmAxC0V5MVUlEqI/jjNtOwWz5O1zrXE3H4zq3TH8UnQDYeryzdzmbOXmav0aXjROS72VA+FgyotHKwZiZ+XMHJxHlHQCS08qtAlV5aY+kBVPd1/30Zxj8ShNJzmN6K6l+ZU5pxH9Szlq5FSZTWs17hAKt/2ASj4JiJoPcd4NyN+cpd0RfX1GSLy1TK0MrcblesvLyXWH8B2ZkhxWc9+yKQmtbh1vkTG6MBxt6TC2uCChhk58iFFAEB1nm0lRS6k=</Modulus>
+<Exponent>AQAB</Exponent>
+</RSAKeyValue>"
 
     Private Sub New()
     End Sub

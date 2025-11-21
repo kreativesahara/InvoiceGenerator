@@ -7,10 +7,10 @@ Imports System.Text
 ''' Simple standalone LicenseGenerator utility for vendors.
 ''' Usage (console):
 '''   - To generate a new RSA keypair:
-'''       LicenseGenerator.exe genkeys <privateKeyOut.xml> <publicKeyOut.xml>
+'''       LicenseGenerator.exe genkeys <vendor_private.xml> <vendor_public.xml>
 '''
 '''   - To create a license file (payload + signature):
-'''       LicenseGenerator.exe makelic <privateKey.xml> <clientId> <expiry-iso8601> [out.lic]
+'''       LicenseGenerator.exe makelic <vendor_private.xml> <clientId> <expiry-iso8601> [out.lic]
 '''
 ''' Notes / guidance for vendor:
 '''   - The application (client) embeds the public key XML (ToXmlString(FALSE) output) into
@@ -29,12 +29,12 @@ Module LicenseGenerator
         Console.WriteLine("LicenseGenerator utility")
         Console.WriteLine()
         Console.WriteLine("Commands:")
-        Console.WriteLine("  genkeys <privateOut.xml> <publicOut.xml>   - generate RSA4096 keypair and save XML")
-        Console.WriteLine("  makelic <privateKey.xml> <clientId> <expiry-iso8601> [licence.lic]    - make license file")
+        Console.WriteLine("  genkeys <vendor_private.xml> <vendor_public.xml>   - generate RSA4096 keypair and save XML")
+        Console.WriteLine("  makelic <vendor_private.xml> <clientId> <expiry-iso8601> [licence.lic]    - make license file")
         Console.WriteLine()
         Console.WriteLine("Examples:")
-        Console.WriteLine("  LicenseGenerator genkeys vendor_private.xml vendor_public.xml")
-        Console.WriteLine("  LicenseGenerator makelic vendor_private.xml 3f3a1b2c-... 2026-12-31T23:59:59Z customer.lic")
+        Console.WriteLine("  .\LicenseGenerator.exe genkeys vendor_private.xml vendor_public.xml")
+        Console.WriteLine("  .\LicenseGenerator.exe makelic vendor_private.xml 3f3a1b2c-... 2026-12-31T23:59:59Z customer.lic")
     End Sub
 
     Private Function GenerateKeyPair() As String()
@@ -77,7 +77,7 @@ Module LicenseGenerator
         Try
             If cmd = "genkeys" Then
                 If args.Length < 3 Then
-                    Console.WriteLine("genkeys requires two file paths: <privateOut.xml> <publicOut.xml>")
+                    Console.WriteLine("genkeys requires two file paths: <vendor_private.xml> <publicOut.xml>")
                     Return
                 End If
                 Dim privOut = args(1)
@@ -97,7 +97,7 @@ Module LicenseGenerator
 
             If cmd = "makelic" Then
                 If args.Length < 4 Then
-                    Console.WriteLine("makelic requires: <privateKey.xml> <clientId> <expiry-iso8601> [out.lic]")
+                    Console.WriteLine("makelic requires: <vendor_private.xml> <clientId> <expiry-iso8601> [out.lic]")
                     Return
                 End If
                 Dim privateKeyPath = args(1)
@@ -123,7 +123,7 @@ Module LicenseGenerator
                 Console.WriteLine("Signature (base64):")
                 Console.WriteLine(signatureBase64)
                 Console.WriteLine()
-                Console.WriteLine("Deliver the license file to the customer. They must place it as 'license.lic' under %APPDATA%\InvoiceGenerator or use the app's Load License feature.")
+                Console.WriteLine("Deliver the license file to the customer. They must place it as 'license.lic' under %APPDATA%\Roaming\InvoiceGenerator or use the app's Load License feature.")
                 Return
             End If
 
