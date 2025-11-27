@@ -586,22 +586,53 @@ Public Class FrmProformaInvoice
         Dim fontHeader As New Font("Segoe UI", 14, FontStyle.Bold)
         Dim fontSubHeader As New Font("Segoe UI", 11, FontStyle.Bold)
         Dim fontNormal As New Font("Segoe UI", 10)
-        Dim y As Integer = 40
+
+        ' Start near the top of the page
+        Dim y As Integer = 20
+        Dim pageWidth As Integer = e.PageBounds.Width
 
         '========================
-        ' Company Header
+        ' Company Header (centered)
         '========================
-        g.DrawString(lblCompanyName.Text, fontHeader, Brushes.Black, 50, y) : y += 25
-        g.DrawString(lblCompanyDetails.Text, fontNormal, Brushes.Black, 50, y) : y += 40
+        Try
+            Dim compName As String = If(lblCompanyName IsNot Nothing, lblCompanyName.Text, String.Empty)
+            If Not String.IsNullOrEmpty(compName) Then
+                Dim nameWidth = g.MeasureString(compName, fontHeader).Width
+                g.DrawString(compName, fontHeader, Brushes.Black, (pageWidth - nameWidth) / 2, y)
+                y += CInt(g.MeasureString(compName, fontHeader).Height) + 4
+            End If
+
+            Dim compDetails As String = If(lblCompanyDetails IsNot Nothing, lblCompanyDetails.Text, String.Empty)
+            If Not String.IsNullOrEmpty(compDetails) Then
+                ' Company details may contain new lines; print each line centered
+                Dim lines = compDetails.Split(New String() {vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
+                For Each line As String In lines
+                    Dim lineText = line.Trim()
+                    If lineText = String.Empty Then Continue For
+                    Dim lineWidth = g.MeasureString(lineText, fontNormal).Width
+                    g.DrawString(lineText, fontNormal, Brushes.Black, (pageWidth - lineWidth) / 2, y)
+                    y += CInt(g.MeasureString(lineText, fontNormal).Height) + 2
+                Next
+            End If
+        Catch
+            ' ignore drawing errors
+        End Try
+
+        ' Add extra margin between company details and title
+        y += 10
 
         '========================
         ' Centered Invoice Title
         '========================
-        Dim title = lblInvoiceTitle.Text
-        Dim titleWidth = g.MeasureString(title, fontHeader).Width
-        g.DrawString(title, fontHeader, Brushes.Black, (e.PageBounds.Width - titleWidth) / 2, 40)
-
-        y += 10
+        Try
+            Dim title = If(lblInvoiceTitle IsNot Nothing, lblInvoiceTitle.Text, String.Empty)
+            If Not String.IsNullOrEmpty(title) Then
+                Dim titleWidth = g.MeasureString(title, fontHeader).Width
+                g.DrawString(title, fontHeader, Brushes.Black, (pageWidth - titleWidth) / 2, y)
+                y += CInt(g.MeasureString(title, fontHeader).Height) + 12
+            End If
+        Catch
+        End Try
 
         '========================
         ' Client Info
@@ -638,9 +669,9 @@ Public Class FrmProformaInvoice
         For Each row As DataGridViewRow In dgvInvoiceItems.Rows
             If Not row.IsNewRow Then
 
-                g.DrawString(row.Cells("ItemNo").Value.ToString(), fontNormal, Brushes.Black, 50, y)
-                g.DrawString(row.Cells("Description").Value.ToString(), fontNormal, Brushes.Black, 130, y)
-                g.DrawString(row.Cells("Qty").Value.ToString(), fontNormal, Brushes.Black, 420, y)
+                g.DrawString(Convert.ToString(row.Cells("ItemNo").Value), fontNormal, Brushes.Black, 50, y)
+                g.DrawString(Convert.ToString(row.Cells("Description").Value), fontNormal, Brushes.Black, 130, y)
+                g.DrawString(Convert.ToString(row.Cells("Qty").Value), fontNormal, Brushes.Black, 420, y)
 
                 ' Right-align numeric columns
                 g.DrawString(FormatNumber(row.Cells("UnitPrice").Value, 2), fontNormal, Brushes.Black, 500, y)
