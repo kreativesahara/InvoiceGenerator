@@ -1083,34 +1083,48 @@ Public Class FrmProformaInvoice
                              conn.Open()
                              Dim cmd As New OleDbCommand("SELECT InvoiceSerial, InvoiceDate, Client, Total FROM Invoices WHERE ID = ?", conn)
                              cmd.Parameters.Add("p1", OleDbType.Integer).Value = id
-                             Dim reader = cmd.ExecuteReader()
-                             If reader.Read() Then
-                                 Dim serial = reader.GetString(0)
-                                 Dim dt = reader.GetDateTime(1)
-                                 Dim client = reader.GetString(2)
-                                 Dim total = reader.GetDecimal(3)
-                                 Me.Invoke(Sub()
-                                               ' populate edit panel fields (reuse main form controls for simplicity)
-                                               txtInvoiceSerial.Text = serial
-                                               dtpInvoiceDate.Value = dt
-                                               txtBilledTo.Text = client
-                                               txtTotalCost.Text = total.ToString("N2")
-                                               ' load items into dgv (clear current)
-                                               dgvInvoiceItems.Rows.Clear()
-                                               Dim itemCmd As New OleDbCommand("SELECT ItemDescription, Qty, UnitPrice FROM InvoiceItems WHERE InvoiceID = ?", conn)
-                                               itemCmd.Parameters.Add("p1", OleDbType.Integer).Value = id
-                                               Dim ista = itemCmd.ExecuteReader()
-                                               While ista.Read()
-                                                   Dim desc = ista.GetString(0)
-                                                   Dim qty = CDbl(ista.GetValue(1))
-                                                   Dim up = CDbl(ista.GetValue(2))
-                                                   dgvInvoiceItems.Rows.Add("", desc, qty.ToString(), up.ToString("N2"), (qty * up).ToString("N2"))
-                                               End While
-                                               editingInvoiceId = id
-                                               pnlEditInvoice.Visible = True
-                                           End Sub)
-                             End If
-                             reader.Close()
+                             Using reader = cmd.ExecuteReader()
+                                 If reader.Read() Then
+                                     ' Read values safely to avoid invalid cast exceptions
+                                     Dim serial As String = If(reader.IsDBNull(0), String.Empty, Convert.ToString(reader.GetValue(0)))
+                                     Dim dt As DateTime = If(reader.IsDBNull(1), DateTime.Now, Convert.ToDateTime(reader.GetValue(1)))
+                                     Dim client As String = If(reader.IsDBNull(2), String.Empty, Convert.ToString(reader.GetValue(2)))
+                                     Dim total As Double = 0D
+                                     If Not reader.IsDBNull(3) Then
+                                         total = Convert.ToDouble(reader.GetValue(3))
+                                     End If
+
+                                     Me.Invoke(Sub()
+                                                   txtInvoiceSerial.Text = serial
+                                                   dtpInvoiceDate.Value = dt
+                                                   txtBilledTo.Text = client
+                                                   txtTotalCost.Text = total.ToString("N2")
+                                                   dgvInvoiceItems.Rows.Clear()
+                                               End Sub)
+
+                                     ' Load items separately and safely
+                                     Dim itemCmd As New OleDbCommand("SELECT ItemDescription, Qty, UnitPrice FROM InvoiceItems WHERE InvoiceID = ?", conn)
+                                     itemCmd.Parameters.Add("p1", OleDbType.Integer).Value = id
+                                     Using ista = itemCmd.ExecuteReader()
+                                         While ista.Read()
+                                             Dim desc As String = If(ista.IsDBNull(0), String.Empty, Convert.ToString(ista.GetValue(0)))
+                                             Dim qty As Double = 0D
+                                             Dim up As Double = 0D
+                                             If Not ista.IsDBNull(1) Then qty = Convert.ToDouble(ista.GetValue(1))
+                                             If Not ista.IsDBNull(2) Then up = Convert.ToDouble(ista.GetValue(2))
+                                             Dim amount = qty * up
+                                             Me.Invoke(Sub()
+                                                           dgvInvoiceItems.Rows.Add("", desc, qty.ToString(), up.ToString("N2"), amount.ToString("N2"))
+                                                       End Sub)
+                                         End While
+                                     End Using
+
+                                     Me.Invoke(Sub()
+                                                   editingInvoiceId = id
+                                                   If pnlEditInvoice IsNot Nothing Then pnlEditInvoice.Visible = True
+                                               End Sub)
+                                 End If
+                             End Using
                          End Using
                      Catch ex As Exception
                          Me.Invoke(Sub() MessageBox.Show("Failed to load invoice: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error))
