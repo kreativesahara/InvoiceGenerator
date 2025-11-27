@@ -117,4 +117,14 @@ Friend NotInheritable Class LicenseManager
         If DateTime.UtcNow > expiryUtc Then Return False
         Return True
     End Function
+
+    ' Convenience wrapper expected by UI: check license validity for a client id
+    Public Shared Function IsLicenseValid(localClientId As String) As Boolean
+        Dim expiry As DateTime = DateTime.MinValue
+        Try
+            Return IsLicensed(localClientId, expiry)
+        Catch
+            Return False
+        End Try
+    End Function
 End Class

@@ -1,6 +1,8 @@
 Imports System.Drawing.Printing
 Imports System.IO
 Imports Microsoft.VisualBasic
+Imports System.Data.OleDb
+Imports System.Threading.Tasks
 
 Public Class FrmProformaInvoice
     Inherits Form
@@ -40,6 +42,11 @@ Public Class FrmProformaInvoice
     Private btnResetAll As Button
     Private btnLoadLicense As Button
     Private btnLicenseStatus As Button
+    Private btnSaveInvoice As Button
+    Private btnViewHistory As Button
+    Private pnlEditInvoice As Panel
+    Private btnSaveChanges As Button
+    Private editingInvoiceId As Integer = -1
 
     ' Client ID UI
     Private lblClientIdLabel As Label
@@ -139,6 +146,18 @@ Public Class FrmProformaInvoice
         cmbInvoiceType.Items.AddRange(New Object() {"PROFORMA INVOICE", "TAX INVOICE", "QUOTATION", "CREDIT NOTE", "DEBIT NOTE", "CASH SALE"})
         cmbInvoiceType.Text = lblInvoiceTitle.Text
         AddHandler cmbInvoiceType.TextChanged, AddressOf cmbInvoiceType_TextChanged
+
+        ' Save Invoice button in header (top)
+        btnSaveInvoice = New Button With {
+            .Text = "Save Invoice",
+            .Font = New Font("Segoe UI", 9, FontStyle.Regular),
+            .Location = New Point(820, 680), ' moved to footer area
+            .Size = New Size(120, 28),
+            .BackColor = Color.FromArgb(39, 174, 96),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat
+        }
+        AddHandler btnSaveInvoice.Click, AddressOf btnSaveInvoice_Click
 
         PanelHeader.Controls.AddRange({lblCompanyName, lblCompanyDetails, lblInvoiceTitle, lblClientIdLabel, lblClientIdValue, lblTrialStatus})
         PanelHeader.Controls.Add(cmbInvoiceType)
@@ -298,13 +317,57 @@ Public Class FrmProformaInvoice
         btnResetAll = New Button With {
             .Text = "Reset All",
             .Font = New Font("Segoe UI", 9, FontStyle.Regular),
-            .Location = New Point(130, 680),
+            .Location = New Point(140, 680),
             .Size = New Size(100, 28),
             .BackColor = Color.FromArgb(52, 73, 94),
             .ForeColor = Color.White,
             .FlatStyle = FlatStyle.Flat
         }
         AddHandler btnResetAll.Click, AddressOf btnResetAll_Click
+
+        btnViewHistory = New Button With {
+            .Text = "View History",
+            .Font = New Font("Segoe UI", 9, FontStyle.Regular),
+            .Location = New Point(260, 680),
+            .Size = New Size(120, 28),
+            .BackColor = Color.FromArgb(41, 128, 185),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat
+        }
+        AddHandler btnViewHistory.Click, AddressOf btnViewHistory_Click
+
+        btnLicenseStatus = New Button With {
+            .Text = "License Status",
+            .Font = New Font("Segoe UI", 9, FontStyle.Regular),
+            .Location = New Point(400, 680),
+            .Size = New Size(120, 28),
+            .BackColor = Color.FromArgb(52, 152, 219),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat
+        }
+        AddHandler btnLicenseStatus.Click, AddressOf btnLicenseStatus_Click
+
+        btnLoadLicense = New Button With {
+            .Text = "Load License",
+            .Font = New Font("Segoe UI", 9, FontStyle.Regular),
+            .Location = New Point(540, 680),
+            .Size = New Size(120, 28),
+            .BackColor = Color.FromArgb(46, 204, 113),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat
+        }
+        AddHandler btnLoadLicense.Click, AddressOf btnLoadLicense_Click
+
+        btnSaveInvoice = New Button With {
+            .Text = "Save Invoice",
+            .Font = New Font("Segoe UI", 9, FontStyle.Regular),
+            .Location = New Point(680, 680),
+            .Size = New Size(120, 28),
+            .BackColor = Color.FromArgb(39, 174, 96),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat
+        }
+        AddHandler btnSaveInvoice.Click, AddressOf btnSaveInvoice_Click
 
         btnPrint = New Button With {
             .Text = "Print",
@@ -323,37 +386,13 @@ Public Class FrmProformaInvoice
         toolTip1 = New ToolTip()
         toolTip1.SetToolTip(btnPrint, "Add at least one item to enable printing")
 
-        ' Load/Paste License button
-        btnLoadLicense = New Button With {
-            .Text = "Load License",
-            .Font = New Font("Segoe UI", 9, FontStyle.Regular),
-            .Location = New Point(740, 680),
-            .Size = New Size(120, 28),
-            .BackColor = Color.FromArgb(46, 204, 113),
-            .ForeColor = Color.White,
-            .FlatStyle = FlatStyle.Flat
-        }
-        AddHandler btnLoadLicense.Click, AddressOf btnLoadLicense_Click
-
-        ' License Status button (shows license/trial details)
-        btnLicenseStatus = New Button With {
-            .Text = "License Status",
-            .Font = New Font("Segoe UI", 9, FontStyle.Regular),
-            .Location = New Point(600, 680),
-            .Size = New Size(120, 28),
-            .BackColor = Color.FromArgb(52, 152, 219),
-            .ForeColor = Color.White,
-            .FlatStyle = FlatStyle.Flat
-        }
-        AddHandler btnLicenseStatus.Click, AddressOf btnLicenseStatus_Click
-
         ' === Print Setup ===
         PrintDocument1 = New PrintDocument()
         PrintPreviewDialog1 = New PrintPreviewDialog() With {.Document = PrintDocument1, .Width = 800, .Height = 600}
         AddHandler PrintDocument1.PrintPage, AddressOf PrintDocument1_PrintPage
 
         ' === Add Controls to contentPanel ===
-        contentPanel.Controls.AddRange({lblBilledTo, txtBilledTo, lblAddress, txtAddress, lblInvoiceDate, dtpInvoiceDate, lblInvoiceSerial, txtInvoiceSerial, grpProductEntry, dgvInvoiceItems, lblTotalCost, txtTotalCost, lblNote, txtNote, lblThanks, txtThanks, btnRemoveLine, btnResetAll, btnLoadLicense, btnLicenseStatus, btnPrint})
+        contentPanel.Controls.AddRange({lblBilledTo, txtBilledTo, lblAddress, txtAddress, lblInvoiceDate, dtpInvoiceDate, lblInvoiceSerial, txtInvoiceSerial, grpProductEntry, dgvInvoiceItems, lblTotalCost, txtTotalCost, lblNote, txtNote, lblThanks, txtThanks, btnRemoveLine, btnResetAll, btnViewHistory, btnLicenseStatus, btnLoadLicense, btnSaveInvoice, btnPrint})
 
         ' === Add header and contentPanel to Form ===
         Me.Controls.AddRange({PanelHeader, contentPanel})
@@ -812,6 +851,7 @@ Public Class FrmProformaInvoice
             If btnPrint Is Nothing OrElse dgvInvoiceItems Is Nothing Then
                 Return
             End If
+
             Dim hasItems As Boolean = False
             For Each r As DataGridViewRow In dgvInvoiceItems.Rows
                 If Not r.IsNewRow Then
@@ -819,31 +859,35 @@ Public Class FrmProformaInvoice
                     Exit For
                 End If
             Next
+
             ' When the overall UI is disabled (trial expired / not licensed) keep the button disabled
-            Dim uiEnabled = contentPanel.Enabled
+            Dim uiEnabled = True
+            Try
+                uiEnabled = If(contentPanel IsNot Nothing, contentPanel.Enabled, True)
+            Catch
+            End Try
+
             If Not uiEnabled Then
                 btnPrint.Enabled = False
                 btnPrint.BackColor = Color.Gray
                 btnPrint.ForeColor = Color.LightGray
                 btnPrint.Cursor = Cursors.Default
-                toolTip1.SetToolTip(btnPrint, "Application not licensed or trial expired")
+                If toolTip1 IsNot Nothing Then toolTip1.SetToolTip(btnPrint, "Application not licensed or trial expired")
                 Return
             End If
 
-            ' UI is enabled: keep the control Enabled so ToolTip shows even when there are no items
+            ' UI is enabled: set appearance based on whether there are items
             btnPrint.Enabled = True
             If hasItems Then
-                ' normal enabled appearance
                 btnPrint.BackColor = btnPrintDefaultBackColor
                 btnPrint.ForeColor = Color.White
                 btnPrint.Cursor = Cursors.Default
-                toolTip1.SetToolTip(btnPrint, "Print preview and print the invoice")
+                If toolTip1 IsNot Nothing Then toolTip1.SetToolTip(btnPrint, "Print preview and print the invoice")
             Else
-                ' visually disabled but enabled to allow tooltip to show
                 btnPrint.BackColor = Color.Gray
                 btnPrint.ForeColor = Color.LightGray
                 btnPrint.Cursor = Cursors.No
-                toolTip1.SetToolTip(btnPrint, "Add at least one item to enable printing")
+                If toolTip1 IsNot Nothing Then toolTip1.SetToolTip(btnPrint, "Add at least one item to enable printing")
             End If
 
             ' Also disable/enable PrintPreviewDialog controls (ToolStrip and PreviewControl)
@@ -864,5 +908,204 @@ Public Class FrmProformaInvoice
         Catch
             ' ignore
         End Try
+    End Sub
+
+    ' --- Database helper functions ---
+    Private Function GetConnectionString() As String
+        Dim dbPath = Path.Combine(LicenseManager.AppFolder, "invoices.accdb")
+        Return $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={dbPath};Persist Security Info=False;"
+    End Function
+
+    Private Sub EnsureDatabase()
+        Try
+            LicenseManager.EnsureAppFolder()
+            Dim dbPath = Path.Combine(LicenseManager.AppFolder, "invoices.accdb")
+            If File.Exists(dbPath) Then Return
+            ' Create a simple Access database using ADOX would be ideal but not available reliably.
+            ' For now, require vendor to include invoices.accdb in AppFolder or create manually.
+        Catch
+        End Try
+    End Sub
+
+    ' Save invoice (header + items) to Access DB. Uses background task.
+    Private Sub btnSaveInvoice_Click(sender As Object, e As EventArgs)
+        If Not LicenseManager.IsLicenseValid(clientId) Then
+            MessageBox.Show("Saving invoices requires a valid license.", "License Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+        SaveInvoice()
+    End Sub
+
+    Private Sub SaveInvoice()
+        Task.Run(Sub()
+                     Try
+                         EnsureDatabase()
+                         Dim connStr = GetConnectionString()
+                         Using conn As New OleDbConnection(connStr)
+                             conn.Open()
+                             ' Validate header fields on UI thread
+                             Dim billedTo = String.Empty
+                             Dim invoiceDate As DateTime = DateTime.UtcNow
+                             Dim total As Decimal = 0D
+                             Me.Invoke(Sub()
+                                           billedTo = txtBilledTo.Text.Trim()
+                                           invoiceDate = dtpInvoiceDate.Value
+                                           Decimal.TryParse(txtTotalCost.Text, total)
+                                       End Sub)
+                             If String.IsNullOrWhiteSpace(billedTo) Then
+                                 Me.Invoke(Sub() MessageBox.Show("Client name is required.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning))
+                                 Return
+                             End If
+                             ' Insert header
+                             Dim cmd As New OleDbCommand("INSERT INTO Invoices (InvoiceSerial, InvoiceDate, Client, Total) VALUES (?, ?, ?, ?)", conn)
+                             cmd.Parameters.AddWithValue("@serial", If(txtInvoiceSerial IsNot Nothing, txtInvoiceSerial.Text, ""))
+                             cmd.Parameters.AddWithValue("@date", invoiceDate)
+                             cmd.Parameters.AddWithValue("@client", billedTo)
+                             cmd.Parameters.AddWithValue("@total", total)
+                             cmd.ExecuteNonQuery()
+                             ' Get generated ID
+                             Dim idCmd As New OleDbCommand("SELECT @@IDENTITY", conn)
+                             Dim insertedId = Convert.ToInt32(idCmd.ExecuteScalar())
+                             ' Insert items
+                             For Each row As DataGridViewRow In dgvInvoiceItems.Rows
+                                 If row.IsNewRow Then Continue For
+                                 Dim item = Convert.ToString(row.Cells("Description").Value)
+                                 Dim qty As Decimal = 0D
+                                 Decimal.TryParse(Convert.ToString(row.Cells("Qty").Value), qty)
+                                 Dim unitPrice As Decimal = 0D
+                                 Decimal.TryParse(Convert.ToString(row.Cells("UnitPrice").Value), unitPrice)
+                                 Dim amount As Decimal = qty * unitPrice
+                                 Dim itemCmd As New OleDbCommand("INSERT INTO InvoiceItems (InvoiceID, ItemDescription, Qty, UnitPrice, Amount) VALUES (?, ?, ?, ?, ?)", conn)
+                                 itemCmd.Parameters.AddWithValue("@inv", insertedId)
+                                 itemCmd.Parameters.AddWithValue("@desc", item)
+                                 itemCmd.Parameters.AddWithValue("@qty", qty)
+                                 itemCmd.Parameters.AddWithValue("@up", unitPrice)
+                                 itemCmd.Parameters.AddWithValue("@amt", amount)
+                                 itemCmd.ExecuteNonQuery()
+                             Next
+                             Me.Invoke(Sub()
+                                           MessageBox.Show("Invoice saved.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                           ' refresh serial for next invoice
+                                           SetNewInvoiceSerial()
+                                       End Sub)
+                         End Using
+                     Catch ex As Exception
+                         Me.Invoke(Sub() MessageBox.Show("Failed to save invoice: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error))
+                     End Try
+                 End Sub)
+    End Sub
+
+    ' View history -> open FrmInvoiceHistory (modal)
+    Private Sub btnViewHistory_Click(sender As Object, e As EventArgs)
+        Try
+            Dim f As New FrmInvoiceHistory(Me)
+            f.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show("Failed to open history: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ' Load invoice for edit (called from history)
+    Public Sub LoadInvoiceForEdit(id As Integer)
+        If Not LicenseManager.IsLicenseValid(clientId) Then
+            MessageBox.Show("Editing invoices requires a valid license.", "License Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+        Task.Run(Sub()
+                     Try
+                         Dim connStr = GetConnectionString()
+                         Using conn As New OleDbConnection(connStr)
+                             conn.Open()
+                             Dim cmd As New OleDbCommand("SELECT InvoiceSerial, InvoiceDate, Client, Total FROM Invoices WHERE ID = ?", conn)
+                             cmd.Parameters.AddWithValue("@id", id)
+                             Dim reader = cmd.ExecuteReader()
+                             If reader.Read() Then
+                                 Dim serial = reader.GetString(0)
+                                 Dim dt = reader.GetDateTime(1)
+                                 Dim client = reader.GetString(2)
+                                 Dim total = reader.GetDecimal(3)
+                                 Me.Invoke(Sub()
+                                               ' populate edit panel fields (reuse main form controls for simplicity)
+                                               txtInvoiceSerial.Text = serial
+                                               dtpInvoiceDate.Value = dt
+                                               txtBilledTo.Text = client
+                                               txtTotalCost.Text = total.ToString("N2")
+                                               ' load items into dgv (clear current)
+                                               dgvInvoiceItems.Rows.Clear()
+                                               Dim itemCmd As New OleDbCommand("SELECT ItemDescription, Qty, UnitPrice FROM InvoiceItems WHERE InvoiceID = ?", conn)
+                                               itemCmd.Parameters.AddWithValue("@inv", id)
+                                               Dim ista = itemCmd.ExecuteReader()
+                                               While ista.Read()
+                                                   Dim desc = ista.GetString(0)
+                                                   Dim qty = ista.GetDecimal(1)
+                                                   Dim up = ista.GetDecimal(2)
+                                                   dgvInvoiceItems.Rows.Add("", desc, qty.ToString(), up.ToString("N2"), (qty * up).ToString("N2"))
+                                               End While
+                                               editingInvoiceId = id
+                                               pnlEditInvoice.Visible = True
+                                           End Sub)
+                             End If
+                             reader.Close()
+                         End Using
+                     Catch ex As Exception
+                         Me.Invoke(Sub() MessageBox.Show("Failed to load invoice: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error))
+                     End Try
+                 End Sub)
+    End Sub
+
+    ' Save changes to the selected invoice
+    Private Sub btnSaveChanges_Click(sender As Object, e As EventArgs)
+        If editingInvoiceId <= 0 Then
+            MessageBox.Show("No invoice selected for editing.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return
+        End If
+        If Not LicenseManager.IsLicenseValid(clientId) Then
+            MessageBox.Show("Editing invoices requires a valid license.", "License Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+        Task.Run(Sub()
+                     Try
+                         Dim connStr = GetConnectionString()
+                         Using conn As New OleDbConnection(connStr)
+                             conn.Open()
+                             ' basic header update (client, date, total)
+                             Dim updateCmd As New OleDbCommand("UPDATE Invoices SET InvoiceSerial = ?, InvoiceDate = ?, Client = ?, Total = ? WHERE ID = ?", conn)
+                             updateCmd.Parameters.AddWithValue("@serial", txtInvoiceSerial.Text)
+                             updateCmd.Parameters.AddWithValue("@date", dtpInvoiceDate.Value)
+                             updateCmd.Parameters.AddWithValue("@client", txtBilledTo.Text)
+                             Dim tot As Decimal = 0D
+                             Decimal.TryParse(txtTotalCost.Text, tot)
+                             updateCmd.Parameters.AddWithValue("@total", tot)
+                             updateCmd.Parameters.AddWithValue("@id", editingInvoiceId)
+                             updateCmd.ExecuteNonQuery()
+                             ' For simplicity, delete existing items and reinsert current grid items
+                             Dim delCmd As New OleDbCommand("DELETE FROM InvoiceItems WHERE InvoiceID = ?", conn)
+                             delCmd.Parameters.AddWithValue("@inv", editingInvoiceId)
+                             delCmd.ExecuteNonQuery()
+                             For Each row As DataGridViewRow In dgvInvoiceItems.Rows
+                                 If row.IsNewRow Then Continue For
+                                 Dim item = Convert.ToString(row.Cells("Description").Value)
+                                 Dim qty As Decimal = 0D
+                                 Decimal.TryParse(Convert.ToString(row.Cells("Qty").Value), qty)
+                                 Dim unitPrice As Decimal = 0D
+                                 Decimal.TryParse(Convert.ToString(row.Cells("UnitPrice").Value), unitPrice)
+                                 Dim itemCmd As New OleDbCommand("INSERT INTO InvoiceItems (InvoiceID, ItemDescription, Qty, UnitPrice, Amount) VALUES (?, ?, ?, ?, ?)", conn)
+                                 itemCmd.Parameters.AddWithValue("@inv", editingInvoiceId)
+                                 itemCmd.Parameters.AddWithValue("@desc", item)
+                                 itemCmd.Parameters.AddWithValue("@qty", qty)
+                                 itemCmd.Parameters.AddWithValue("@up", unitPrice)
+                                 itemCmd.Parameters.AddWithValue("@amt", qty * unitPrice)
+                                 itemCmd.ExecuteNonQuery()
+                             Next
+                             Me.Invoke(Sub()
+                                           MessageBox.Show("Invoice updated.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                           pnlEditInvoice.Visible = False
+                                           editingInvoiceId = -1
+                                       End Sub)
+                         End Using
+                     Catch ex As Exception
+                         Me.Invoke(Sub() MessageBox.Show("Failed to update invoice: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error))
+                     End Try
+                 End Sub)
     End Sub
 End Class
