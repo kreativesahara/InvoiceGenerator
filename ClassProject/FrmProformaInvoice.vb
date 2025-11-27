@@ -586,14 +586,10 @@ Public Class FrmProformaInvoice
         Dim fontHeader As New Font("Segoe UI", 14, FontStyle.Bold)
         Dim fontSubHeader As New Font("Segoe UI", 11, FontStyle.Bold)
         Dim fontNormal As New Font("Segoe UI", 10)
-
-        ' Start near the top of the page
         Dim y As Integer = 20
         Dim pageWidth As Integer = e.PageBounds.Width
 
-        '========================
-        ' Company Header (centered)
-        '========================
+        ' Center company name and details
         Try
             Dim compName As String = If(lblCompanyName IsNot Nothing, lblCompanyName.Text, String.Empty)
             If Not String.IsNullOrEmpty(compName) Then
@@ -604,7 +600,6 @@ Public Class FrmProformaInvoice
 
             Dim compDetails As String = If(lblCompanyDetails IsNot Nothing, lblCompanyDetails.Text, String.Empty)
             If Not String.IsNullOrEmpty(compDetails) Then
-                ' Company details may contain new lines; print each line centered
                 Dim lines = compDetails.Split(New String() {vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
                 For Each line As String In lines
                     Dim lineText = line.Trim()
@@ -618,12 +613,10 @@ Public Class FrmProformaInvoice
             ' ignore drawing errors
         End Try
 
-        ' Add extra margin between company details and title
+        ' margin between details and title
         y += 10
 
-        '========================
-        ' Centered Invoice Title
-        '========================
+        ' Center invoice title
         Try
             Dim title = If(lblInvoiceTitle IsNot Nothing, lblInvoiceTitle.Text, String.Empty)
             If Not String.IsNullOrEmpty(title) Then
@@ -634,9 +627,7 @@ Public Class FrmProformaInvoice
         Catch
         End Try
 
-        '========================
         ' Client Info
-        '========================
         g.DrawString("Billed To: " & txtBilledTo.Text, fontNormal, Brushes.Black, 50, y)
         g.DrawString("Invoice Date: " & dtpInvoiceDate.Value.ToShortDateString(), fontNormal, Brushes.Black, 500, y)
         y += 20
@@ -645,10 +636,7 @@ Public Class FrmProformaInvoice
         g.DrawString("Invoice Serial: " & txtInvoiceSerial.Text, fontNormal, Brushes.Black, 50, y)
         y += 30
 
-
-        '========================
         ' Table Header
-        '========================
         g.DrawLine(Pens.Black, 40, y, 760, y)
         y += 5
 
@@ -662,21 +650,14 @@ Public Class FrmProformaInvoice
         g.DrawLine(Pens.Black, 40, y, 760, y)
         y += 5
 
-
-        '========================
         ' Table Items
-        '========================
         For Each row As DataGridViewRow In dgvInvoiceItems.Rows
             If Not row.IsNewRow Then
-
                 g.DrawString(Convert.ToString(row.Cells("ItemNo").Value), fontNormal, Brushes.Black, 50, y)
                 g.DrawString(Convert.ToString(row.Cells("Description").Value), fontNormal, Brushes.Black, 130, y)
                 g.DrawString(Convert.ToString(row.Cells("Qty").Value), fontNormal, Brushes.Black, 420, y)
-
-                ' Right-align numeric columns
                 g.DrawString(FormatNumber(row.Cells("UnitPrice").Value, 2), fontNormal, Brushes.Black, 500, y)
                 g.DrawString(FormatNumber(row.Cells("Amount").Value, 2), fontNormal, Brushes.Black, 620, y)
-
                 y += 22
             End If
         Next
@@ -684,22 +665,16 @@ Public Class FrmProformaInvoice
         g.DrawLine(Pens.Black, 40, y, 760, y)
         y += 20
 
-
-        '========================
         ' Total
-        '========================
-        g.DrawString("Total Cost (KES): " & FormatNumber(txtTotalCost.Text, 2),
-                 fontSubHeader, Brushes.Black, 500, y)
+        g.DrawString("Total Cost (KES): " & FormatNumber(txtTotalCost.Text, 2), fontSubHeader, Brushes.Black, 500, y)
         y += 40
 
-        '========================
         ' Notes
-        '========================
-        g.DrawString("Note: " & txtNote.Text, fontNormal, Brushes.Black, 50, y) : y += 18
+        g.DrawString("Note: " & txtNote.Text, fontNormal, Brushes.Black, 50, y)
+        y += 18
         g.DrawString(txtThanks.Text, fontNormal, Brushes.Black, 50, y)
 
     End Sub
-
 
     ' Sync ComboBox text into the header invoice title label
     Private Sub cmbInvoiceType_TextChanged(sender As Object, e As EventArgs)
@@ -1022,41 +997,26 @@ Public Class FrmProformaInvoice
         Return $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={dbPath};Persist Security Info=False;"
     End Function
 
-    ' Ensure the Access database file and required tables exist. If the .accdb file is missing
-    ' attempt to create it via ADOX (late-bound). Then ensure the Invoices and InvoiceItems
-    ' tables exist and create them if not present.
+    ' Ensure the Access database file and required tables exist and include InvoiceType
     Private Sub EnsureDatabase()
         Try
             LicenseManager.EnsureAppFolder()
             Dim dbPath = Path.Combine(LicenseManager.AppFolder, "invoices.accdb")
 
-            ' If the DB file does not exist, attempt to create it using ADOX (late-bound COM).
-            ' This requires the Access Database Engine (ACE) to be installed on the system.
             If Not File.Exists(dbPath) Then
                 Try
                     Dim cat = CreateObject("ADOX.Catalog")
-                    ' Create with ACE provider; use concatenation to avoid VB string-interpolation issues.
                     cat.Create("Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" & dbPath & ";")
                     cat = Nothing
-                Catch ex As Exception
-                    ' Creation may fail if ADOX/ACE is not available. We'll surface a helpful
-                    ' debug trace but not throw to avoid crashing the UI thread here.
-                    Try
-                        ' Best effort: write a small log file to help diagnose.
-                        Dim logPath = Path.Combine(LicenseManager.AppFolder, "db_create_error.log")
-                        File.AppendAllText(logPath, DateTime.UtcNow.ToString("s") & " - ADOX create failed: " & ex.Message & vbCrLf)
-                    Catch
-                    End Try
+                Catch
+                    ' ignore
                 End Try
             End If
 
-            ' If the file exists (either previously or created above), ensure the tables exist.
             If File.Exists(dbPath) Then
-                Dim connStr = GetConnectionString()
-                Using conn As New OleDbConnection(connStr)
+                Using conn As New OleDbConnection(GetConnectionString())
                     conn.Open()
 
-                    ' Query schema for tables
                     Dim schema = conn.GetSchema("Tables")
                     Dim hasInvoices As Boolean = False
                     Dim hasItems As Boolean = False
@@ -1069,16 +1029,34 @@ Public Class FrmProformaInvoice
                         End If
                     Next
 
-                    ' Create Invoices table if missing
                     If Not hasInvoices Then
-                        ' AUTOINCREMENT (COUNTER) primary key; TEXT(255) for strings, DATETIME for dates, DOUBLE for totals
-                        Dim createInvoices As String = "CREATE TABLE Invoices (ID COUNTER PRIMARY KEY, InvoiceSerial TEXT(255), InvoiceDate DATETIME, Client TEXT(255), Total DOUBLE)"
+                        Dim createInvoices As String = "CREATE TABLE Invoices (ID COUNTER PRIMARY KEY, InvoiceSerial TEXT(255), InvoiceDate DATETIME, Client TEXT(255), Total DOUBLE, InvoiceType TEXT(100))"
                         Using cmd As New OleDbCommand(createInvoices, conn)
                             cmd.ExecuteNonQuery()
                         End Using
+                    Else
+                        ' ensure InvoiceType column exists
+                        Try
+                            Dim cols = conn.GetSchema("Columns")
+                            Dim hasInvoiceType As Boolean = False
+                            For Each cr As DataRow In cols.Rows
+                                Dim tn = Convert.ToString(cr("TABLE_NAME"))
+                                Dim colName = Convert.ToString(cr("COLUMN_NAME"))
+                                If String.Equals(tn, "Invoices", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(colName, "InvoiceType", StringComparison.OrdinalIgnoreCase) Then
+                                    hasInvoiceType = True
+                                    Exit For
+                                End If
+                            Next
+                            If Not hasInvoiceType Then
+                                Using alterCmd As New OleDbCommand("ALTER TABLE Invoices ADD COLUMN InvoiceType TEXT(100)", conn)
+                                    alterCmd.ExecuteNonQuery()
+                                End Using
+                            End If
+                        Catch
+                            ' ignore
+                        End Try
                     End If
 
-                    ' Create InvoiceItems table if missing
                     If Not hasItems Then
                         Dim createItems As String = "CREATE TABLE InvoiceItems (ID COUNTER PRIMARY KEY, InvoiceID LONG, ItemDescription TEXT(255), Qty DOUBLE, UnitPrice DOUBLE, Amount DOUBLE)"
                         Using cmd As New OleDbCommand(createItems, conn)
@@ -1087,13 +1065,8 @@ Public Class FrmProformaInvoice
                     End If
                 End Using
             End If
-        Catch ex As Exception
-            ' Log the error silently to help troubleshooting but do not crash the application.
-            Try
-                Dim logPath = Path.Combine(LicenseManager.AppFolder, "db_error.log")
-                File.AppendAllText(logPath, DateTime.UtcNow.ToString("s") & " - EnsureDatabase error: " & ex.Message & vbCrLf)
-            Catch
-            End Try
+        Catch
+            ' ignore
         End Try
     End Sub
 
@@ -1117,21 +1090,24 @@ Public Class FrmProformaInvoice
                              Dim billedTo = String.Empty
                              Dim invoiceDate As DateTime = DateTime.UtcNow
                              Dim total As Decimal = 0D
+                             Dim invoiceType As String = String.Empty
                              Me.Invoke(Sub()
                                            billedTo = txtBilledTo.Text.Trim()
                                            invoiceDate = dtpInvoiceDate.Value
                                            Decimal.TryParse(txtTotalCost.Text, NumberStyles.Number, CultureInfo.CurrentCulture, total)
+                                           invoiceType = If(cmbInvoiceType IsNot Nothing, cmbInvoiceType.Text, String.Empty)
                                        End Sub)
                              If String.IsNullOrWhiteSpace(billedTo) Then
                                  Me.Invoke(Sub() MessageBox.Show("Client name is required.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning))
                                  Return
                              End If
                              ' Insert header - explicit parameter types and strongly-typed values
-                             Dim cmd As New OleDbCommand("INSERT INTO Invoices (InvoiceSerial, InvoiceDate, Client, Total) VALUES (?, ?, ?, ?)", conn)
+                             Dim cmd As New OleDbCommand("INSERT INTO Invoices (InvoiceSerial, InvoiceDate, Client, Total, InvoiceType) VALUES (?, ?, ?, ?, ?)", conn)
                              cmd.Parameters.Add("p1", OleDbType.VarWChar).Value = If(txtInvoiceSerial IsNot Nothing, txtInvoiceSerial.Text, "")
                              cmd.Parameters.Add("p2", OleDbType.Date).Value = invoiceDate
                              cmd.Parameters.Add("p3", OleDbType.VarWChar).Value = billedTo
                              cmd.Parameters.Add("p4", OleDbType.Double).Value = Convert.ToDouble(total)
+                             cmd.Parameters.Add("p5", OleDbType.VarWChar).Value = invoiceType
                              cmd.ExecuteNonQuery()
                              ' Get generated ID
                              Dim idCmd As New OleDbCommand("SELECT @@IDENTITY", conn)
@@ -1186,7 +1162,7 @@ Public Class FrmProformaInvoice
                          Dim connStr = GetConnectionString()
                          Using conn As New OleDbConnection(connStr)
                              conn.Open()
-                             Dim cmd As New OleDbCommand("SELECT InvoiceSerial, InvoiceDate, Client, Total FROM Invoices WHERE ID = ?", conn)
+                             Dim cmd As New OleDbCommand("SELECT InvoiceSerial, InvoiceDate, Client, Total, InvoiceType FROM Invoices WHERE ID = ?", conn)
                              cmd.Parameters.Add("p1", OleDbType.Integer).Value = id
                              Using reader = cmd.ExecuteReader()
                                  If reader.Read() Then
@@ -1198,11 +1174,13 @@ Public Class FrmProformaInvoice
                                      If Not reader.IsDBNull(3) Then
                                          total = Convert.ToDouble(reader.GetValue(3))
                                      End If
+                                     Dim invoiceType As String = If(reader.IsDBNull(4), String.Empty, Convert.ToString(reader.GetValue(4)))
 
                                      Me.Invoke(Sub()
                                                    txtInvoiceSerial.Text = serial
                                                    dtpInvoiceDate.Value = dt
                                                    txtBilledTo.Text = client
+                                                   If cmbInvoiceType IsNot Nothing Then cmbInvoiceType.Text = invoiceType
                                                    txtTotalCost.Text = total.ToString("N2")
                                                    dgvInvoiceItems.Rows.Clear()
                                                End Sub)
@@ -1254,15 +1232,16 @@ Public Class FrmProformaInvoice
                          Dim connStr = GetConnectionString()
                          Using conn As New OleDbConnection(connStr)
                              conn.Open()
-                             ' basic header update (client, date, total)
-                             Dim updateCmd As New OleDbCommand("UPDATE Invoices SET InvoiceSerial = ?, InvoiceDate = ?, Client = ?, Total = ? WHERE ID = ?", conn)
+                             ' basic header update (client, date, total, type)
+                             Dim updateCmd As New OleDbCommand("UPDATE Invoices SET InvoiceSerial = ?, InvoiceDate = ?, Client = ?, Total = ?, InvoiceType = ? WHERE ID = ?", conn)
                              updateCmd.Parameters.Add("p1", OleDbType.VarWChar).Value = txtInvoiceSerial.Text
                              updateCmd.Parameters.Add("p2", OleDbType.Date).Value = dtpInvoiceDate.Value
                              updateCmd.Parameters.Add("p3", OleDbType.VarWChar).Value = txtBilledTo.Text
                              Dim tot As Double = 0D
                              Double.TryParse(txtTotalCost.Text, NumberStyles.Number, CultureInfo.CurrentCulture, tot)
                              updateCmd.Parameters.Add("p4", OleDbType.Double).Value = tot
-                             updateCmd.Parameters.Add("p5", OleDbType.Integer).Value = editingInvoiceId
+                             updateCmd.Parameters.Add("p5", OleDbType.VarWChar).Value = If(cmbInvoiceType IsNot Nothing, cmbInvoiceType.Text, String.Empty)
+                             updateCmd.Parameters.Add("p6", OleDbType.Integer).Value = editingInvoiceId
                              updateCmd.ExecuteNonQuery()
                              ' For simplicity, delete existing items and reinsert current grid items
                              Dim delCmd As New OleDbCommand("DELETE FROM InvoiceItems WHERE InvoiceID = ?", conn)
