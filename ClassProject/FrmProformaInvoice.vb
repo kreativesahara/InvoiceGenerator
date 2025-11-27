@@ -471,6 +471,24 @@ Public Class FrmProformaInvoice
         RecalculateTotal()
     End Sub
 
+    ' Helper: compute next numeric ItemNo based on existing rows
+    Private Function GetNextItemNumber() As Integer
+        Try
+            Dim maxNum As Integer = 0
+            For Each r As DataGridViewRow In dgvInvoiceItems.Rows
+                If r.IsNewRow Then Continue For
+                Dim val = Convert.ToString(r.Cells("ItemNo").Value)
+                Dim n As Integer = 0
+                If Integer.TryParse(val, n) Then
+                    If n > maxNum Then maxNum = n
+                End If
+            Next
+            Return maxNum + 1
+        Catch
+            Return dgvInvoiceItems.Rows.Count + 1
+        End Try
+    End Function
+
     ' === Add Item button handler ===
     Private Sub btnAddItem_Click(sender As Object, e As EventArgs)
         ' Try to parse values
@@ -493,7 +511,8 @@ Public Class FrmProformaInvoice
 
         Dim itemNo As String = itemNoText
         If String.IsNullOrWhiteSpace(itemNo) Then
-            itemNo = (dgvInvoiceItems.Rows.Count + 1).ToString()
+            ' Auto-assign next numeric item number
+            itemNo = GetNextItemNumber().ToString()
         End If
         dgvInvoiceItems.Rows.Add(itemNo, description, qty.ToString(), unitPrice.ToString("N2"), amount.ToString("N2"))
         RecalculateTotal()
@@ -512,9 +531,24 @@ Public Class FrmProformaInvoice
                 If Not r.IsNewRow Then dgvInvoiceItems.Rows.Remove(r)
             Next
             RecalculateTotal()
+            ' Optionally renumber items after removal
+            UpdateItemNumbers()
         Else
             MessageBox.Show("Select a row to remove.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information)
         End If
+    End Sub
+
+    ' Optionally renumber visible rows sequentially (keeps numeric ascending sequence)
+    Private Sub UpdateItemNumbers()
+        Try
+            Dim idx As Integer = 1
+            For Each r As DataGridViewRow In dgvInvoiceItems.Rows
+                If r.IsNewRow Then Continue For
+                r.Cells("ItemNo").Value = idx.ToString()
+                idx += 1
+            Next
+        Catch
+        End Try
     End Sub
 
     ' === Reset All ===
@@ -549,52 +583,92 @@ Public Class FrmProformaInvoice
 
     Private Sub PrintDocument1_PrintPage(sender As Object, e As PrintPageEventArgs)
         Dim g As Graphics = e.Graphics
-        Dim fontHeader As New Font("Segoe UI", 12, FontStyle.Bold)
+        Dim fontHeader As New Font("Segoe UI", 14, FontStyle.Bold)
+        Dim fontSubHeader As New Font("Segoe UI", 11, FontStyle.Bold)
         Dim fontNormal As New Font("Segoe UI", 10)
-        Dim y As Integer = 50
+        Dim y As Integer = 40
 
-        ' Header
+        '========================
+        ' Company Header
+        '========================
         g.DrawString(lblCompanyName.Text, fontHeader, Brushes.Black, 50, y) : y += 25
         g.DrawString(lblCompanyDetails.Text, fontNormal, Brushes.Black, 50, y) : y += 40
-        ' print the dynamic invoice title from lblInvoiceTitle
-        g.DrawString(lblInvoiceTitle.Text, fontHeader, Brushes.Black, 600, 50)
+
+        '========================
+        ' Centered Invoice Title
+        '========================
+        Dim title = lblInvoiceTitle.Text
+        Dim titleWidth = g.MeasureString(title, fontHeader).Width
+        g.DrawString(title, fontHeader, Brushes.Black, (e.PageBounds.Width - titleWidth) / 2, 40)
+
         y += 10
 
-        ' Client Info (moved to top)
+        '========================
+        ' Client Info
+        '========================
         g.DrawString("Billed To: " & txtBilledTo.Text, fontNormal, Brushes.Black, 50, y)
-        g.DrawString("Invoice Date: " & dtpInvoiceDate.Value.ToShortDateString(), fontNormal, Brushes.Black, 600, y)
+        g.DrawString("Invoice Date: " & dtpInvoiceDate.Value.ToShortDateString(), fontNormal, Brushes.Black, 500, y)
         y += 20
-        g.DrawString("Address: " & txtAddress.Text, fontNormal, Brushes.Black, 50, y)
-        g.DrawString("Invoice Serial: " & txtInvoiceSerial.Text, fontNormal, Brushes.Black, 600, y)
+
+        g.DrawString("Address: " & txtAddress.Text, fontNormal, Brushes.Black, 500, y)
+        g.DrawString("Invoice Serial: " & txtInvoiceSerial.Text, fontNormal, Brushes.Black, 50, y)
         y += 30
 
-        ' Table Header
-        g.DrawString("ITEM NO.", fontNormal, Brushes.Black, 50, y)
-        g.DrawString("DESCRIPTION", fontNormal, Brushes.Black, 120, y)
-        g.DrawString("QTY", fontNormal, Brushes.Black, 400, y)
-        g.DrawString("UNIT PRICE", fontNormal, Brushes.Black, 480, y)
-        g.DrawString("AMOUNT", fontNormal, Brushes.Black, 600, y)
-        y += 20
 
-        ' Items
+        '========================
+        ' Table Header
+        '========================
+        g.DrawLine(Pens.Black, 40, y, 760, y)
+        y += 5
+
+        g.DrawString("ITEM NO.", fontSubHeader, Brushes.Black, 50, y)
+        g.DrawString("DESCRIPTION", fontSubHeader, Brushes.Black, 130, y)
+        g.DrawString("QTY", fontSubHeader, Brushes.Black, 420, y)
+        g.DrawString("UNIT PRICE", fontSubHeader, Brushes.Black, 500, y)
+        g.DrawString("AMOUNT", fontSubHeader, Brushes.Black, 620, y)
+        y += 25
+
+        g.DrawLine(Pens.Black, 40, y, 760, y)
+        y += 5
+
+
+        '========================
+        ' Table Items
+        '========================
         For Each row As DataGridViewRow In dgvInvoiceItems.Rows
             If Not row.IsNewRow Then
-                g.DrawString(Convert.ToString(row.Cells("ItemNo").Value), fontNormal, Brushes.Black, 50, y)
-                g.DrawString(Convert.ToString(row.Cells("Description").Value), fontNormal, Brushes.Black, 120, y)
-                g.DrawString(Convert.ToString(row.Cells("Qty").Value), fontNormal, Brushes.Black, 400, y)
-                g.DrawString(Convert.ToString(row.Cells("UnitPrice").Value), fontNormal, Brushes.Black, 480, y)
-                g.DrawString(Convert.ToString(row.Cells("Amount").Value), fontNormal, Brushes.Black, 600, y)
-                y += 20
+
+                g.DrawString(row.Cells("ItemNo").Value.ToString(), fontNormal, Brushes.Black, 50, y)
+                g.DrawString(row.Cells("Description").Value.ToString(), fontNormal, Brushes.Black, 130, y)
+                g.DrawString(row.Cells("Qty").Value.ToString(), fontNormal, Brushes.Black, 420, y)
+
+                ' Right-align numeric columns
+                g.DrawString(FormatNumber(row.Cells("UnitPrice").Value, 2), fontNormal, Brushes.Black, 500, y)
+                g.DrawString(FormatNumber(row.Cells("Amount").Value, 2), fontNormal, Brushes.Black, 620, y)
+
+                y += 22
             End If
         Next
 
-        y += 30
-        g.DrawString("Total Cost (KES): " & txtTotalCost.Text, fontHeader, Brushes.Black, 480, y)
+        g.DrawLine(Pens.Black, 40, y, 760, y)
+        y += 20
+
+
+        '========================
+        ' Total
+        '========================
+        g.DrawString("Total Cost (KES): " & FormatNumber(txtTotalCost.Text, 2),
+                 fontSubHeader, Brushes.Black, 500, y)
         y += 40
-        ' Print editable note and thank-you message (use textboxes' content)
-        g.DrawString(Convert.ToString(txtNote.Text), fontNormal, Brushes.Black, 50, y) : y += 20
-        g.DrawString(Convert.ToString(txtThanks.Text), fontNormal, Brushes.Black, 50, y)
+
+        '========================
+        ' Notes
+        '========================
+        g.DrawString("Note: " & txtNote.Text, fontNormal, Brushes.Black, 50, y) : y += 18
+        g.DrawString(txtThanks.Text, fontNormal, Brushes.Black, 50, y)
+
     End Sub
+
 
     ' Sync ComboBox text into the header invoice title label
     Private Sub cmbInvoiceType_TextChanged(sender As Object, e As EventArgs)
@@ -1114,7 +1188,9 @@ Public Class FrmProformaInvoice
                                              If Not ista.IsDBNull(2) Then up = Convert.ToDouble(ista.GetValue(2))
                                              Dim amount = qty * up
                                              Me.Invoke(Sub()
-                                                           dgvInvoiceItems.Rows.Add("", desc, qty.ToString(), up.ToString("N2"), amount.ToString("N2"))
+                                                           ' assign a sequential item number when loading
+                                                           Dim itemNo = (dgvInvoiceItems.Rows.Count + 1).ToString()
+                                                           dgvInvoiceItems.Rows.Add(itemNo, desc, qty.ToString(), up.ToString("N2"), amount.ToString("N2"))
                                                        End Sub)
                                          End While
                                      End Using
