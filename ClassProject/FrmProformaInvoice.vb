@@ -3,6 +3,7 @@ Imports System.IO
 Imports Microsoft.VisualBasic
 Imports System.Data.OleDb
 Imports System.Threading.Tasks
+Imports System.Globalization
 
 Public Class FrmProformaInvoice
     Inherits Form
@@ -916,14 +917,78 @@ Public Class FrmProformaInvoice
         Return $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={dbPath};Persist Security Info=False;"
     End Function
 
+    ' Ensure the Access database file and required tables exist. If the .accdb file is missing
+    ' attempt to create it via ADOX (late-bound). Then ensure the Invoices and InvoiceItems
+    ' tables exist and create them if not present.
     Private Sub EnsureDatabase()
         Try
             LicenseManager.EnsureAppFolder()
             Dim dbPath = Path.Combine(LicenseManager.AppFolder, "invoices.accdb")
-            If File.Exists(dbPath) Then Return
-            ' Create a simple Access database using ADOX would be ideal but not available reliably.
-            ' For now, require vendor to include invoices.accdb in AppFolder or create manually.
-        Catch
+
+            ' If the DB file does not exist, attempt to create it using ADOX (late-bound COM).
+            ' This requires the Access Database Engine (ACE) to be installed on the system.
+            If Not File.Exists(dbPath) Then
+                Try
+                    Dim cat = CreateObject("ADOX.Catalog")
+                    ' Create with ACE provider; use concatenation to avoid VB string-interpolation issues.
+                    cat.Create("Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" & dbPath & ";")
+                    cat = Nothing
+                Catch ex As Exception
+                    ' Creation may fail if ADOX/ACE is not available. We'll surface a helpful
+                    ' debug trace but not throw to avoid crashing the UI thread here.
+                    Try
+                        ' Best effort: write a small log file to help diagnose.
+                        Dim logPath = Path.Combine(LicenseManager.AppFolder, "db_create_error.log")
+                        File.AppendAllText(logPath, DateTime.UtcNow.ToString("s") & " - ADOX create failed: " & ex.Message & vbCrLf)
+                    Catch
+                    End Try
+                End Try
+            End If
+
+            ' If the file exists (either previously or created above), ensure the tables exist.
+            If File.Exists(dbPath) Then
+                Dim connStr = GetConnectionString()
+                Using conn As New OleDbConnection(connStr)
+                    conn.Open()
+
+                    ' Query schema for tables
+                    Dim schema = conn.GetSchema("Tables")
+                    Dim hasInvoices As Boolean = False
+                    Dim hasItems As Boolean = False
+                    For Each r As DataRow In schema.Rows
+                        Dim tn = Convert.ToString(r("TABLE_NAME"))
+                        Dim tt = Convert.ToString(r("TABLE_TYPE"))
+                        If String.Equals(tt, "TABLE", StringComparison.OrdinalIgnoreCase) Then
+                            If String.Equals(tn, "Invoices", StringComparison.OrdinalIgnoreCase) Then hasInvoices = True
+                            If String.Equals(tn, "InvoiceItems", StringComparison.OrdinalIgnoreCase) Then hasItems = True
+                        End If
+                    Next
+
+                    ' Create Invoices table if missing
+                    If Not hasInvoices Then
+                        ' AUTOINCREMENT (COUNTER) primary key; TEXT(255) for strings, DATETIME for dates, DOUBLE for totals
+                        Dim createInvoices As String = "CREATE TABLE Invoices (ID COUNTER PRIMARY KEY, InvoiceSerial TEXT(255), InvoiceDate DATETIME, Client TEXT(255), Total DOUBLE)"
+                        Using cmd As New OleDbCommand(createInvoices, conn)
+                            cmd.ExecuteNonQuery()
+                        End Using
+                    End If
+
+                    ' Create InvoiceItems table if missing
+                    If Not hasItems Then
+                        Dim createItems As String = "CREATE TABLE InvoiceItems (ID COUNTER PRIMARY KEY, InvoiceID LONG, ItemDescription TEXT(255), Qty DOUBLE, UnitPrice DOUBLE, Amount DOUBLE)"
+                        Using cmd As New OleDbCommand(createItems, conn)
+                            cmd.ExecuteNonQuery()
+                        End Using
+                    End If
+                End Using
+            End If
+        Catch ex As Exception
+            ' Log the error silently to help troubleshooting but do not crash the application.
+            Try
+                Dim logPath = Path.Combine(LicenseManager.AppFolder, "db_error.log")
+                File.AppendAllText(logPath, DateTime.UtcNow.ToString("s") & " - EnsureDatabase error: " & ex.Message & vbCrLf)
+            Catch
+            End Try
         End Try
     End Sub
 
@@ -950,18 +1015,18 @@ Public Class FrmProformaInvoice
                              Me.Invoke(Sub()
                                            billedTo = txtBilledTo.Text.Trim()
                                            invoiceDate = dtpInvoiceDate.Value
-                                           Decimal.TryParse(txtTotalCost.Text, total)
+                                           Decimal.TryParse(txtTotalCost.Text, NumberStyles.Number, CultureInfo.CurrentCulture, total)
                                        End Sub)
                              If String.IsNullOrWhiteSpace(billedTo) Then
                                  Me.Invoke(Sub() MessageBox.Show("Client name is required.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning))
                                  Return
                              End If
-                             ' Insert header
+                             ' Insert header - explicit parameter types and strongly-typed values
                              Dim cmd As New OleDbCommand("INSERT INTO Invoices (InvoiceSerial, InvoiceDate, Client, Total) VALUES (?, ?, ?, ?)", conn)
-                             cmd.Parameters.AddWithValue("@serial", If(txtInvoiceSerial IsNot Nothing, txtInvoiceSerial.Text, ""))
-                             cmd.Parameters.AddWithValue("@date", invoiceDate)
-                             cmd.Parameters.AddWithValue("@client", billedTo)
-                             cmd.Parameters.AddWithValue("@total", total)
+                             cmd.Parameters.Add("p1", OleDbType.VarWChar).Value = If(txtInvoiceSerial IsNot Nothing, txtInvoiceSerial.Text, "")
+                             cmd.Parameters.Add("p2", OleDbType.Date).Value = invoiceDate
+                             cmd.Parameters.Add("p3", OleDbType.VarWChar).Value = billedTo
+                             cmd.Parameters.Add("p4", OleDbType.Double).Value = Convert.ToDouble(total)
                              cmd.ExecuteNonQuery()
                              ' Get generated ID
                              Dim idCmd As New OleDbCommand("SELECT @@IDENTITY", conn)
@@ -970,17 +1035,17 @@ Public Class FrmProformaInvoice
                              For Each row As DataGridViewRow In dgvInvoiceItems.Rows
                                  If row.IsNewRow Then Continue For
                                  Dim item = Convert.ToString(row.Cells("Description").Value)
-                                 Dim qty As Decimal = 0D
-                                 Decimal.TryParse(Convert.ToString(row.Cells("Qty").Value), qty)
-                                 Dim unitPrice As Decimal = 0D
-                                 Decimal.TryParse(Convert.ToString(row.Cells("UnitPrice").Value), unitPrice)
-                                 Dim amount As Decimal = qty * unitPrice
+                                 Dim qtyD As Double = 0D
+                                 Dim upD As Double = 0D
+                                 Double.TryParse(Convert.ToString(row.Cells("Qty").Value), NumberStyles.Float Or NumberStyles.AllowThousands, CultureInfo.CurrentCulture, qtyD)
+                                 Double.TryParse(Convert.ToString(row.Cells("UnitPrice").Value), NumberStyles.Float Or NumberStyles.AllowThousands, CultureInfo.CurrentCulture, upD)
+                                 Dim amountD As Double = qtyD * upD
                                  Dim itemCmd As New OleDbCommand("INSERT INTO InvoiceItems (InvoiceID, ItemDescription, Qty, UnitPrice, Amount) VALUES (?, ?, ?, ?, ?)", conn)
-                                 itemCmd.Parameters.AddWithValue("@inv", insertedId)
-                                 itemCmd.Parameters.AddWithValue("@desc", item)
-                                 itemCmd.Parameters.AddWithValue("@qty", qty)
-                                 itemCmd.Parameters.AddWithValue("@up", unitPrice)
-                                 itemCmd.Parameters.AddWithValue("@amt", amount)
+                                 itemCmd.Parameters.Add("p1", OleDbType.Integer).Value = insertedId
+                                 itemCmd.Parameters.Add("p2", OleDbType.VarWChar).Value = item
+                                 itemCmd.Parameters.Add("p3", OleDbType.Double).Value = qtyD
+                                 itemCmd.Parameters.Add("p4", OleDbType.Double).Value = upD
+                                 itemCmd.Parameters.Add("p5", OleDbType.Double).Value = amountD
                                  itemCmd.ExecuteNonQuery()
                              Next
                              Me.Invoke(Sub()
@@ -1017,7 +1082,7 @@ Public Class FrmProformaInvoice
                          Using conn As New OleDbConnection(connStr)
                              conn.Open()
                              Dim cmd As New OleDbCommand("SELECT InvoiceSerial, InvoiceDate, Client, Total FROM Invoices WHERE ID = ?", conn)
-                             cmd.Parameters.AddWithValue("@id", id)
+                             cmd.Parameters.Add("p1", OleDbType.Integer).Value = id
                              Dim reader = cmd.ExecuteReader()
                              If reader.Read() Then
                                  Dim serial = reader.GetString(0)
@@ -1033,12 +1098,12 @@ Public Class FrmProformaInvoice
                                                ' load items into dgv (clear current)
                                                dgvInvoiceItems.Rows.Clear()
                                                Dim itemCmd As New OleDbCommand("SELECT ItemDescription, Qty, UnitPrice FROM InvoiceItems WHERE InvoiceID = ?", conn)
-                                               itemCmd.Parameters.AddWithValue("@inv", id)
+                                               itemCmd.Parameters.Add("p1", OleDbType.Integer).Value = id
                                                Dim ista = itemCmd.ExecuteReader()
                                                While ista.Read()
                                                    Dim desc = ista.GetString(0)
-                                                   Dim qty = ista.GetDecimal(1)
-                                                   Dim up = ista.GetDecimal(2)
+                                                   Dim qty = CDbl(ista.GetValue(1))
+                                                   Dim up = CDbl(ista.GetValue(2))
                                                    dgvInvoiceItems.Rows.Add("", desc, qty.ToString(), up.ToString("N2"), (qty * up).ToString("N2"))
                                                End While
                                                editingInvoiceId = id
@@ -1070,31 +1135,31 @@ Public Class FrmProformaInvoice
                              conn.Open()
                              ' basic header update (client, date, total)
                              Dim updateCmd As New OleDbCommand("UPDATE Invoices SET InvoiceSerial = ?, InvoiceDate = ?, Client = ?, Total = ? WHERE ID = ?", conn)
-                             updateCmd.Parameters.AddWithValue("@serial", txtInvoiceSerial.Text)
-                             updateCmd.Parameters.AddWithValue("@date", dtpInvoiceDate.Value)
-                             updateCmd.Parameters.AddWithValue("@client", txtBilledTo.Text)
-                             Dim tot As Decimal = 0D
-                             Decimal.TryParse(txtTotalCost.Text, tot)
-                             updateCmd.Parameters.AddWithValue("@total", tot)
-                             updateCmd.Parameters.AddWithValue("@id", editingInvoiceId)
+                             updateCmd.Parameters.Add("p1", OleDbType.VarWChar).Value = txtInvoiceSerial.Text
+                             updateCmd.Parameters.Add("p2", OleDbType.Date).Value = dtpInvoiceDate.Value
+                             updateCmd.Parameters.Add("p3", OleDbType.VarWChar).Value = txtBilledTo.Text
+                             Dim tot As Double = 0D
+                             Double.TryParse(txtTotalCost.Text, NumberStyles.Number, CultureInfo.CurrentCulture, tot)
+                             updateCmd.Parameters.Add("p4", OleDbType.Double).Value = tot
+                             updateCmd.Parameters.Add("p5", OleDbType.Integer).Value = editingInvoiceId
                              updateCmd.ExecuteNonQuery()
                              ' For simplicity, delete existing items and reinsert current grid items
                              Dim delCmd As New OleDbCommand("DELETE FROM InvoiceItems WHERE InvoiceID = ?", conn)
-                             delCmd.Parameters.AddWithValue("@inv", editingInvoiceId)
+                             delCmd.Parameters.Add("p1", OleDbType.Integer).Value = editingInvoiceId
                              delCmd.ExecuteNonQuery()
                              For Each row As DataGridViewRow In dgvInvoiceItems.Rows
                                  If row.IsNewRow Then Continue For
                                  Dim item = Convert.ToString(row.Cells("Description").Value)
-                                 Dim qty As Decimal = 0D
-                                 Decimal.TryParse(Convert.ToString(row.Cells("Qty").Value), qty)
-                                 Dim unitPrice As Decimal = 0D
-                                 Decimal.TryParse(Convert.ToString(row.Cells("UnitPrice").Value), unitPrice)
+                                 Dim qtyD As Double = 0D
+                                 Dim upD As Double = 0D
+                                 Double.TryParse(Convert.ToString(row.Cells("Qty").Value), NumberStyles.Float Or NumberStyles.AllowThousands, CultureInfo.CurrentCulture, qtyD)
+                                 Double.TryParse(Convert.ToString(row.Cells("UnitPrice").Value), NumberStyles.Float Or NumberStyles.AllowThousands, CultureInfo.CurrentCulture, upD)
                                  Dim itemCmd As New OleDbCommand("INSERT INTO InvoiceItems (InvoiceID, ItemDescription, Qty, UnitPrice, Amount) VALUES (?, ?, ?, ?, ?)", conn)
-                                 itemCmd.Parameters.AddWithValue("@inv", editingInvoiceId)
-                                 itemCmd.Parameters.AddWithValue("@desc", item)
-                                 itemCmd.Parameters.AddWithValue("@qty", qty)
-                                 itemCmd.Parameters.AddWithValue("@up", unitPrice)
-                                 itemCmd.Parameters.AddWithValue("@amt", qty * unitPrice)
+                                 itemCmd.Parameters.Add("p1", OleDbType.Integer).Value = editingInvoiceId
+                                 itemCmd.Parameters.Add("p2", OleDbType.VarWChar).Value = item
+                                 itemCmd.Parameters.Add("p3", OleDbType.Double).Value = qtyD
+                                 itemCmd.Parameters.Add("p4", OleDbType.Double).Value = upD
+                                 itemCmd.Parameters.Add("p5", OleDbType.Double).Value = qtyD * upD
                                  itemCmd.ExecuteNonQuery()
                              Next
                              Me.Invoke(Sub()
