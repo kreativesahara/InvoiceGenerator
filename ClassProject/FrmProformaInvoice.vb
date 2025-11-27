@@ -39,6 +39,7 @@ Public Class FrmProformaInvoice
     Private btnRemoveLine As Button
     Private btnResetAll As Button
     Private btnLoadLicense As Button
+    Private btnLicenseStatus As Button
 
     ' Client ID UI
     Private lblClientIdLabel As Label
@@ -334,13 +335,25 @@ Public Class FrmProformaInvoice
         }
         AddHandler btnLoadLicense.Click, AddressOf btnLoadLicense_Click
 
+        ' License Status button (shows license/trial details)
+        btnLicenseStatus = New Button With {
+            .Text = "License Status",
+            .Font = New Font("Segoe UI", 9, FontStyle.Regular),
+            .Location = New Point(600, 680),
+            .Size = New Size(120, 28),
+            .BackColor = Color.FromArgb(52, 152, 219),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat
+        }
+        AddHandler btnLicenseStatus.Click, AddressOf btnLicenseStatus_Click
+
         ' === Print Setup ===
         PrintDocument1 = New PrintDocument()
         PrintPreviewDialog1 = New PrintPreviewDialog() With {.Document = PrintDocument1, .Width = 800, .Height = 600}
         AddHandler PrintDocument1.PrintPage, AddressOf PrintDocument1_PrintPage
 
         ' === Add Controls to contentPanel ===
-        contentPanel.Controls.AddRange({lblBilledTo, txtBilledTo, lblAddress, txtAddress, lblInvoiceDate, dtpInvoiceDate, lblInvoiceSerial, txtInvoiceSerial, grpProductEntry, dgvInvoiceItems, lblTotalCost, txtTotalCost, lblNote, txtNote, lblThanks, txtThanks, btnRemoveLine, btnResetAll, btnLoadLicense, btnPrint})
+        contentPanel.Controls.AddRange({lblBilledTo, txtBilledTo, lblAddress, txtAddress, lblInvoiceDate, dtpInvoiceDate, lblInvoiceSerial, txtInvoiceSerial, grpProductEntry, dgvInvoiceItems, lblTotalCost, txtTotalCost, lblNote, txtNote, lblThanks, txtThanks, btnRemoveLine, btnResetAll, btnLoadLicense, btnLicenseStatus, btnPrint})
 
         ' === Add header and contentPanel to Form ===
         Me.Controls.AddRange({PanelHeader, contentPanel})
@@ -651,8 +664,7 @@ Public Class FrmProformaInvoice
                 Dim daysLeft = LicenseManager.TrialDaysLeft()
                 If daysLeft <= 7 Then
                     MessageBox.Show("Trial will expire in " & daysLeft &
-                                    " day(s). After that a signed license file will be required.
-                                    ", "Trial Notice", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                    " day(s). After that a signed license file will be required.", "Trial Notice", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 End If
                 ApplyLicensedState(True)
                 Return
@@ -662,6 +674,16 @@ Public Class FrmProformaInvoice
             Dim expiryUtc As DateTime = DateTime.MinValue
             If LicenseManager.IsLicensed(clientId, expiryUtc) Then
                 ApplyLicensedState(True)
+                ' License is valid: switch to Pro title and hide license UI/timer
+                Me.Text = "invoice generator Pro"
+                ' ensure trial is ended if license already present
+                Try
+                    LicenseManager.EndTrial()
+                Catch
+                End Try
+                If btnLoadLicense IsNot Nothing Then btnLoadLicense.Visible = False
+                If lblTrialStatus IsNot Nothing Then lblTrialStatus.Visible = False
+                If trialTimer IsNot Nothing Then trialTimer.Enabled = False
                 Return
             End If
 
@@ -727,12 +749,60 @@ Public Class FrmProformaInvoice
                 ApplyLicensedState(True)
                 UpdateTrialLabel()
                 UpdatePrintButtonState()
+                ' On successful license, update UI to Pro and hide license controls + disable timer
+                Me.Text = "invoice generator Pro"
+                If btnLoadLicense IsNot Nothing Then btnLoadLicense.Visible = False
+                If lblTrialStatus IsNot Nothing Then lblTrialStatus.Visible = False
+                If trialTimer IsNot Nothing Then trialTimer.Enabled = False
+                ' End trial now that license is installed
+                Try
+                    LicenseManager.EndTrial()
+                Catch
+                End Try
             Else
                 MessageBox.Show("License is invalid or does not match this Client ID.", "Invalid License", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 ApplyLicensedState(False)
             End If
         Catch ex As Exception
             MessageBox.Show("Failed to install license: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ' Show license/trial status dialog
+    Private Sub btnLicenseStatus_Click(sender As Object, e As EventArgs)
+        Try
+            LicenseManager.EnsureAppFolder()
+            Dim expiry As DateTime = DateTime.MinValue
+            Dim licensedClient As String = String.Empty
+            Dim msg As String = String.Empty
+
+            If LicenseManager.TryValidateLicense(expiry, licensedClient) Then
+                Dim localMatch = If(String.IsNullOrEmpty(clientId), False, String.Equals(clientId, licensedClient, StringComparison.OrdinalIgnoreCase))
+                Dim daysLeft As Integer = CInt((expiry.ToUniversalTime() - DateTime.UtcNow).TotalDays)
+                If daysLeft < 0 Then daysLeft = 0
+                msg &= "Licensed: Yes" & vbCrLf
+                msg &= "Expires (UTC): " & expiry.ToUniversalTime().ToString("yyyy-MM-dd") & vbCrLf
+                msg &= "Days until expiry: " & daysLeft & vbCrLf
+                msg &= "Licensed Client ID: " & licensedClient & vbCrLf
+                msg &= "This device Client ID: " & If(String.IsNullOrEmpty(clientId), "N/A", clientId) & vbCrLf
+                msg &= "Client ID matches license: " & If(localMatch, "Yes", "No") & vbCrLf
+            Else
+                ' No valid license file present
+                If File.Exists(Path.Combine(LicenseManager.AppFolder, "license.lic")) Then
+                    msg &= "License file present but invalid or signature failed." & vbCrLf
+                Else
+                    msg &= "No license installed." & vbCrLf
+                End If
+                If LicenseManager.IsTrialActive() Then
+                    msg &= "Trial active. Days left: " & LicenseManager.TrialDaysLeft() & vbCrLf
+                Else
+                    msg &= "Trial expired." & vbCrLf
+                End If
+            End If
+
+            MessageBox.Show(msg, "License Status", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Catch ex As Exception
+            MessageBox.Show("Failed to determine license status: " & ex.Message, "License Status", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

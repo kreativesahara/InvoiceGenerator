@@ -48,6 +48,18 @@ Friend NotInheritable Class LicenseManager
         Return DateTime.UtcNow <= install.AddDays(60)
     End Function
 
+    ' Mark the trial as ended (used after successful license installation)
+    Public Shared Sub EndTrial()
+        Try
+            EnsureAppFolder()
+            ' Set install date to far in the past so trial is considered expired
+            Dim past = DateTime.UtcNow.AddYears(-1)
+            File.WriteAllText(InstallFile, past.ToString("o"))
+        Catch
+            ' ignore write failures
+        End Try
+    End Sub
+
     ' Validate license and extract expiry and client id from payload
     Public Shared Function TryValidateLicense(ByRef expiry As DateTime, ByRef licensedClientId As String) As Boolean
         expiry = DateTime.MinValue
