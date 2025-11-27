@@ -57,6 +57,9 @@ Public Class FrmProformaInvoice
     ' Timer to update trial label daily
     Private trialTimer As Timer
 
+    ' Serial counter file name (persisted in AppData)
+    Private Const SerialCounterFileName As String = "serial_counter.txt"
+
     Public Sub New()
         InitializeComponent()
         EnsureClientId()
@@ -356,6 +359,30 @@ Public Class FrmProformaInvoice
         trialTimer.Start()
         ' Ensure initial print button state
         UpdatePrintButtonState()
+
+        ' Generate initial invoice serial (persisted auto-increment + GUID)
+        SetNewInvoiceSerial()
+    End Sub
+
+    ' Generate and set a new invoice serial using a persisted auto-increment counter plus a GUID.
+    Private Sub SetNewInvoiceSerial()
+        Try
+            LicenseManager.EnsureAppFolder()
+            Dim counterFile = Path.Combine(LicenseManager.AppFolder, SerialCounterFileName)
+            Dim counter As Long = 0
+            If File.Exists(counterFile) Then
+                Long.TryParse(File.ReadAllText(counterFile).Trim(), counter)
+            End If
+            counter += 1
+            File.WriteAllText(counterFile, counter.ToString())
+
+            Dim guidPart = Guid.NewGuid().ToString("N").ToUpper()
+            ' Format: INV-000123-<GUID>
+            Dim serial = String.Format("INV-{0}-{1}", counter.ToString("D6"), guidPart)
+            If txtInvoiceSerial IsNot Nothing Then txtInvoiceSerial.Text = serial
+        Catch
+            ' ignore errors - do not crash UI
+        End Try
     End Sub
 
     ' === Auto Calculation ===
@@ -443,6 +470,8 @@ Public Class FrmProformaInvoice
             dgvInvoiceItems.Rows.Clear()
             txtTotalCost.Text = "0.00"
             UpdatePrintButtonState()
+            ' Reset invoice serial when starting a fresh invoice
+            SetNewInvoiceSerial()
         End If
     End Sub
 
