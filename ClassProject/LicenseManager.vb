@@ -38,22 +38,22 @@ Friend NotInheritable Class LicenseManager
 
     Public Shared Function TrialDaysLeft() As Integer
         Dim install = GetInstallDate()
-        Dim days = CInt((install.AddDays(25) - DateTime.UtcNow).TotalDays)
+        Dim days = CInt((install.AddDays(30) - DateTime.UtcNow).TotalDays)
         If days < 0 Then Return 0
         Return days
     End Function
 
     Public Shared Function IsTrialActive() As Boolean
         Dim install = GetInstallDate()
-        Return DateTime.UtcNow <= install.AddDays(25)
+        Return DateTime.UtcNow <= install.AddDays(30)
     End Function
 
     ' Mark the trial as ended (used after successful license installation)
     Public Shared Sub EndTrial()
         Try
             EnsureAppFolder()
-            ' Set install date to far in the past so trial is considered expired
-            Dim past = DateTime.UtcNow.AddYears(-1)
+            ' Set install date to in the past so trial is considered expired
+            Dim past = DateTime.UtcNow.AddDays(-31)
             File.WriteAllText(InstallFile, past.ToString("o"))
         Catch
             ' ignore write failures
