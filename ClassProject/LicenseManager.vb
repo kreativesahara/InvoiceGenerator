@@ -38,14 +38,14 @@ Friend NotInheritable Class LicenseManager
 
     Public Shared Function TrialDaysLeft() As Integer
         Dim install = GetInstallDate()
-        Dim days = CInt((install.AddDays(60) - DateTime.UtcNow).TotalDays)
+        Dim days = CInt((install.AddDays(25) - DateTime.UtcNow).TotalDays)
         If days < 0 Then Return 0
         Return days
     End Function
 
     Public Shared Function IsTrialActive() As Boolean
         Dim install = GetInstallDate()
-        Return DateTime.UtcNow <= install.AddDays(60)
+        Return DateTime.UtcNow <= install.AddDays(25)
     End Function
 
     ' Mark the trial as ended (used after successful license installation)
