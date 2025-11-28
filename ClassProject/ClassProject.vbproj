@@ -110,6 +110,9 @@
       <DependentUpon>Form1.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FrmInvoiceHistory.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="FrmProformaInvoice.vb">
       <SubType>Form</SubType>
     </Compile>
