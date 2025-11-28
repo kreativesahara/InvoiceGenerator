@@ -8,14 +8,14 @@
     <OutputType>WinExe</OutputType>
     <StartupObject>ClassProject.My.MyApplication</StartupObject>
     <RootNamespace>ClassProject</RootNamespace>
-    <AssemblyName>Invoice Generator v.1.0.2</AssemblyName>
+    <AssemblyName>Mwasidi Invoice Generator v.1.0.2</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>WindowsForms</MyType>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <TargetFrameworkProfile />
-    <PublishUrl>C:\Users\kreative Sahara\Desktop\</PublishUrl>
+    <PublishUrl>C:\Users\kreative Sahara\Desktop\Mwasidi\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
     <UpdateEnabled>false</UpdateEnabled>
@@ -38,7 +38,7 @@
     <DefineDebug>true</DefineDebug>
     <DefineTrace>true</DefineTrace>
     <OutputPath>bin\Debug\</OutputPath>
-    <DocumentationFile>Invoice Generator v.1.0.2.xml</DocumentationFile>
+    <DocumentationFile>Mwasidi Invoice Generator v.1.0.2.xml</DocumentationFile>
     <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -48,7 +48,7 @@
     <DefineTrace>true</DefineTrace>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DocumentationFile>Invoice Generator v.1.0.2.xml</DocumentationFile>
+    <DocumentationFile>Mwasidi Invoice Generator v.1.0.2.xml</DocumentationFile>
     <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
