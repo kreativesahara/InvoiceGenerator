@@ -94,15 +94,15 @@ Public Class FrmProformaInvoice
         }
 
         lblCompanyName = New Label With {
-            .Text = "MWASID GRANITES",
+            .Text = "VISION CAR CLINIC AUTOCARE",
             .Font = New Font("Segoe UI", 16, FontStyle.Bold),
             .Location = New Point(20, 10),
             .AutoSize = True
         }
 
         lblCompanyDetails = New Label With {
-            .Text = "Nairobi, 00208, Kenya" & vbCrLf &
-                    "Contacts: 0790109743  |  Email: mwasidgranite@gmail.com",
+            .Text = "Karen, 1661-00502, Nairobi" & vbCrLf &
+                    "Contacts: 0721267960  |  Email: wilsionwainaina12@gmail.com",
             .Font = New Font("Segoe UI", 10),
             .Location = New Point(20, 45),
             .AutoSize = True

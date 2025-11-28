@@ -27,3 +27,4 @@ C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Mw
 C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Mwasidi Invoice Generator v.1.0.2.exe
 C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Mwasidi Invoice Generator v.1.0.2.xml
 C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Mwasidi Invoice Generator v.1.0.2.pdb
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Mwasidi Invoice Generator v.1.0.2.exe.config
