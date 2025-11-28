@@ -81,7 +81,7 @@ Public Class FrmProformaInvoice
     Private Sub InitializeComponent()
         ' === Form ===
         Me.Text = "Invoice Generator"
-        Me.ClientSize = New Size(1000, 750)
+        Me.ClientSize = New Size(1000, 650)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
         Me.BackColor = Color.White
@@ -243,7 +243,7 @@ Public Class FrmProformaInvoice
         ' === DataGridView (Invoice Table) ===
         dgvInvoiceItems = New DataGridView With {
             .Location = New Point(20, 260), ' placed below the product entry group
-            .Size = New Size(960, 260),
+            .Size = New Size(960, 250),
             .BackgroundColor = Color.White,
             .AllowUserToAddRows = False,
             .RowHeadersVisible = False,
