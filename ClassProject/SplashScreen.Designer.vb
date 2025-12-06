@@ -31,10 +31,10 @@ Partial Class SplashScreen
         '
         Me.Label2.AutoSize = True
         Me.Label2.Font = New System.Drawing.Font("Segoe Print", 14.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label2.ForeColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(0, Byte), Integer), CType(CType(0, Byte), Integer), CType(CType(0, Byte), Integer))
-        Me.Label2.Location = New System.Drawing.Point(484, 252)
+        Me.Label2.ForeColor = System.Drawing.Color.White
+        Me.Label2.Location = New System.Drawing.Point(818, 273)
         Me.Label2.Name = "Label2"
-        Me.Label2.Size = New System.Drawing.Size(213, 33)
+        Me.Label2.Size = New System.Drawing.Size(157, 33)
         Me.Label2.TabIndex = 3
         Me.Label2.Text = "Invoice System"
         '
@@ -43,17 +43,17 @@ Partial Class SplashScreen
         Me.Label1.AutoSize = True
         Me.Label1.Font = New System.Drawing.Font("Segoe Print", 36.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.Label1.ForeColor = System.Drawing.SystemColors.ButtonFace
-        Me.Label1.Location = New System.Drawing.Point(261, 176)
+        Me.Label1.Location = New System.Drawing.Point(24, 188)
         Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(463, 85)
+        Me.Label1.Size = New System.Drawing.Size(981, 85)
         Me.Label1.TabIndex = 2
-        Me.Label1.Text = "Mwasidi Invoice Generator"
+        Me.Label1.Text = "ASHTECH ELECTRICALS ENTERPRISE"
         '
         'SplashScreen
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.BackColor = System.Drawing.Color.FromArgb(CType(CType(238, Byte), Integer), CType(CType(82, Byte), Integer), CType(CType(83, Byte), Integer))
+        Me.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(0, Byte), Integer), CType(CType(192, Byte), Integer))
         Me.ClientSize = New System.Drawing.Size(998, 498)
         Me.ControlBox = False
         Me.Controls.Add(Me.Label2)

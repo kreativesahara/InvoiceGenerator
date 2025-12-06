@@ -94,15 +94,16 @@ Public Class FrmProformaInvoice
         }
 
         lblCompanyName = New Label With {
-            .Text = "MWASID GRANITES",
+            .Text = "ASHTECH ELECTRICALS ENTERPRISE",
             .Font = New Font("Segoe UI", 16, FontStyle.Bold),
             .Location = New Point(20, 10),
             .AutoSize = True
         }
 
         lblCompanyDetails = New Label With {
-            .Text = "Nairobi, 00208, Kenya" & vbCrLf &
-                    "Contacts: 0790109743  |  Email: mwasidgranite@gmail.com",
+            .Text = "Nairobi, Kenya" & vbCrLf &
+                    "Email: ahtechelectricalenterpriceko@gmail.com" & vbCrLf &
+                    "Contacts: 0702026477 / 0725347169",
             .Font = New Font("Segoe UI", 10),
             .Location = New Point(20, 45),
             .AutoSize = True
