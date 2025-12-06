@@ -101,9 +101,9 @@ Public Class FrmProformaInvoice
         }
 
         lblCompanyDetails = New Label With {
-            .Text = "Nairobi, Kenya" & vbCrLf &
-                    "Email: ahtechelectricalenterpriceko@gmail.com" & vbCrLf &
-                    "Contacts: 0702026477 / 0725347169",
+            .Text = "Email: ahtechelectricalenterpriceko@gmail.com" & vbCrLf &
+                    "Contacts: 0702026477 / 0725347169" & vbCrLf &
+                    "Nairobi, Kenya",
             .Font = New Font("Segoe UI", 10),
             .Location = New Point(20, 45),
             .AutoSize = True
@@ -587,6 +587,7 @@ Public Class FrmProformaInvoice
         Dim fontHeader As New Font("Segoe UI", 14, FontStyle.Bold)
         Dim fontSubHeader As New Font("Segoe UI", 11, FontStyle.Bold)
         Dim fontNormal As New Font("Segoe UI", 10)
+        Dim fontSmall As New Font("Segoe UI", 9)
         Dim y As Integer = 20
         Dim pageWidth As Integer = e.PageBounds.Width
 
@@ -597,6 +598,22 @@ Public Class FrmProformaInvoice
                 Dim nameWidth = g.MeasureString(compName, fontHeader).Width
                 g.DrawString(compName, fontHeader, Brushes.Black, (pageWidth - nameWidth) / 2, y)
                 y += CInt(g.MeasureString(compName, fontHeader).Height) + 4
+            End If
+
+            ' Add company services line
+            Dim servicesText As String = "Dealers in: installation of CCTV, Electrical Fence, Power backups, internet solution, DSTV, Container Installation Professional, piping and Cabling, solar solution etc."
+            If Not String.IsNullOrEmpty(servicesText) Then
+                ' Center services text within the same left/right margins used by the rest of the content (50px margin)
+                Dim contentLeft As Single = 50
+                Dim contentWidth As Single = pageWidth - (contentLeft * 2)
+                Dim servicesRect As New RectangleF(contentLeft, y, contentWidth, 100)
+                Dim sfCenter As New StringFormat()
+                sfCenter.Alignment = StringAlignment.Center
+                sfCenter.LineAlignment = StringAlignment.Near
+                g.DrawString(servicesText, fontSmall, Brushes.Black, servicesRect, sfCenter)
+                ' measure height within the constrained width to advance y correctly
+                Dim measured As SizeF = g.MeasureString(servicesText, fontSmall, New SizeF(contentWidth, 0))
+                y += CInt(measured.Height) + 4
             End If
 
             Dim compDetails As String = If(lblCompanyDetails IsNot Nothing, lblCompanyDetails.Text, String.Empty)
