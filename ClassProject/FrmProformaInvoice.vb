@@ -598,7 +598,7 @@ Public Class FrmProformaInvoice
             Dim compName As String = If(lblCompanyName IsNot Nothing, lblCompanyName.Text, String.Empty)
             If Not String.IsNullOrEmpty(compName) Then
                 Dim nameWidth = g.MeasureString(compName, fontHeader).Width
-                g.DrawString(compName, fontHeader, Brushes.Black, (pageWidth - nameWidth) / 2, y)
+                g.DrawString(compName, fontHeader, Brushes.Green, (pageWidth - nameWidth) / 2, y)
                 y += CInt(g.MeasureString(compName, fontHeader).Height) + 4
             End If
 
@@ -612,7 +612,7 @@ Public Class FrmProformaInvoice
                 Dim sfCenter As New StringFormat()
                 sfCenter.Alignment = StringAlignment.Center
                 sfCenter.LineAlignment = StringAlignment.Near
-                g.DrawString(servicesText, fontSmall, Brushes.Black, servicesRect, sfCenter)
+                g.DrawString(servicesText, fontSmall, Brushes.Green, servicesRect, sfCenter)
                 ' measure height within the constrained width to advance y correctly
                 Dim measured As SizeF = g.MeasureString(servicesText, fontSmall, New SizeF(contentWidth, 0))
                 y += CInt(measured.Height) + 4
@@ -625,7 +625,7 @@ Public Class FrmProformaInvoice
                     Dim lineText = line.Trim()
                     If lineText = String.Empty Then Continue For
                     Dim lineWidth = g.MeasureString(lineText, fontNormal).Width
-                    g.DrawString(lineText, fontNormal, Brushes.Black, (pageWidth - lineWidth) / 2, y)
+                    g.DrawString(lineText, fontNormal, Brushes.Green, (pageWidth - lineWidth) / 2, y)
                     y += CInt(g.MeasureString(lineText, fontNormal).Height) + 2
                 Next
             End If
@@ -641,52 +641,52 @@ Public Class FrmProformaInvoice
             Dim title = If(lblInvoiceTitle IsNot Nothing, lblInvoiceTitle.Text, String.Empty)
             If Not String.IsNullOrEmpty(title) Then
                 Dim titleWidth = g.MeasureString(title, fontHeader).Width
-                g.DrawString(title, fontHeader, Brushes.Black, (pageWidth - titleWidth) / 2, y)
+                g.DrawString(title, fontHeader, Brushes.Green, (pageWidth - titleWidth) / 2, y)
                 y += CInt(g.MeasureString(title, fontHeader).Height) + 12
             End If
         Catch
         End Try
 
         ' Client Info
-        g.DrawString("Billed To: " & txtBilledTo.Text, fontNormal, Brushes.Black, 50, y)
-        g.DrawString("Invoice Date: " & dtpInvoiceDate.Value.ToShortDateString(), fontNormal, Brushes.Black, 500, y)
+        g.DrawString("Billed To: " & txtBilledTo.Text, fontNormal, Brushes.Green, 50, y)
+        g.DrawString("Invoice Date: " & dtpInvoiceDate.Value.ToShortDateString(), fontNormal, Brushes.Green, 500, y)
         y += 20
 
-        g.DrawString("Address: " & txtAddress.Text, fontNormal, Brushes.Black, 500, y)
-        g.DrawString("Invoice Serial: " & txtInvoiceSerial.Text, fontNormal, Brushes.Black, 50, y)
+        g.DrawString("Address: " & txtAddress.Text, fontNormal, Brushes.Green, 500, y)
+        g.DrawString("Invoice Serial: " & txtInvoiceSerial.Text, fontNormal, Brushes.Green, 50, y)
         y += 30
 
         ' Table Header
-        g.DrawLine(Pens.Black, 40, y, 760, y)
+        g.DrawLine(Pens.Green, 40, y, 760, y)
         y += 5
 
-        g.DrawString("ITEM NO.", fontSubHeader, Brushes.Black, 50, y)
-        g.DrawString("DESCRIPTION", fontSubHeader, Brushes.Black, 130, y)
-        g.DrawString("QTY", fontSubHeader, Brushes.Black, 420, y)
-        g.DrawString("UNIT PRICE", fontSubHeader, Brushes.Black, 500, y)
-        g.DrawString("AMOUNT", fontSubHeader, Brushes.Black, 620, y)
+        g.DrawString("ITEM NO.", fontSubHeader, Brushes.Green, 50, y)
+        g.DrawString("DESCRIPTION", fontSubHeader, Brushes.Green, 130, y)
+        g.DrawString("QTY", fontSubHeader, Brushes.Green, 420, y)
+        g.DrawString("UNIT PRICE", fontSubHeader, Brushes.Green, 500, y)
+        g.DrawString("AMOUNT", fontSubHeader, Brushes.Green, 620, y)
         y += 25
 
-        g.DrawLine(Pens.Black, 40, y, 760, y)
+        g.DrawLine(Pens.Green, 40, y, 760, y)
         y += 5
 
         ' Table Items
         For Each row As DataGridViewRow In dgvInvoiceItems.Rows
             If Not row.IsNewRow Then
-                g.DrawString(Convert.ToString(row.Cells("ItemNo").Value), fontNormal, Brushes.Black, 50, y)
-                g.DrawString(Convert.ToString(row.Cells("Description").Value), fontNormal, Brushes.Black, 130, y)
-                g.DrawString(Convert.ToString(row.Cells("Qty").Value), fontNormal, Brushes.Black, 420, y)
-                g.DrawString(FormatNumber(row.Cells("UnitPrice").Value, 2), fontNormal, Brushes.Black, 500, y)
-                g.DrawString(FormatNumber(row.Cells("Amount").Value, 2), fontNormal, Brushes.Black, 620, y)
+                g.DrawString(Convert.ToString(row.Cells("ItemNo").Value), fontNormal, Brushes.Green, 50, y)
+                g.DrawString(Convert.ToString(row.Cells("Description").Value), fontNormal, Brushes.Green, 130, y)
+                g.DrawString(Convert.ToString(row.Cells("Qty").Value), fontNormal, Brushes.Green, 420, y)
+                g.DrawString(FormatNumber(row.Cells("UnitPrice").Value, 2), fontNormal, Brushes.Green, 500, y)
+                g.DrawString(FormatNumber(row.Cells("Amount").Value, 2), fontNormal, Brushes.Green, 620, y)
                 y += 22
             End If
         Next
 
-        g.DrawLine(Pens.Black, 40, y, 760, y)
+        g.DrawLine(Pens.Green, 40, y, 760, y)
         y += 20
 
         ' Total
-        g.DrawString("Total Cost (KES): " & FormatNumber(txtTotalCost.Text, 2), fontSubHeader, Brushes.Black, 500, y)
+        g.DrawString("Total Cost (KES): " & FormatNumber(txtTotalCost.Text, 2), fontSubHeader, Brushes.Green, 500, y)
         y += 40
 
         ' Notes (with 1.5 line spacing for note lines)
@@ -697,7 +697,7 @@ Public Class FrmProformaInvoice
 
         If txtNote IsNot Nothing Then
             ' Label
-            g.DrawString("TERMS AND CONDITIONS", fontNormal, Brushes.Black, baseLeft, y)
+            g.DrawString("TERMS AND CONDITIONS", fontNormal, Brushes.Green, baseLeft, y)
             y += CInt(lineHeightF * 1.5)
 
             ' Draw each line of the note with 1.5 spacing
@@ -708,7 +708,7 @@ Public Class FrmProformaInvoice
                 Dim sfNote As New StringFormat()
                 sfNote.Alignment = StringAlignment.Near
                 sfNote.LineAlignment = StringAlignment.Near
-                g.DrawString(ln.Trim(), fontNormal, Brushes.Black, noteRect, sfNote)
+                g.DrawString(ln.Trim(), fontNormal, Brushes.Green, noteRect, sfNote)
                 ' advance by 1.5x line height
                 y += CInt(lineHeightF * 1.5)
             Next
@@ -722,7 +722,7 @@ Public Class FrmProformaInvoice
             Dim sfThanks As New StringFormat()
             sfThanks.Alignment = StringAlignment.Near
             sfThanks.LineAlignment = StringAlignment.Near
-            g.DrawString(txtThanks.Text, fontNormal, Brushes.Black, thanksRect, sfThanks)
+            g.DrawString(txtThanks.Text, fontNormal, Brushes.Green, thanksRect, sfThanks)
             ' advance y in case further content follows
             Dim measuredThanks As SizeF = g.MeasureString(txtThanks.Text, fontNormal, New SizeF(contentWidthForNote, 0))
             y += CInt(measuredThanks.Height) + 2
