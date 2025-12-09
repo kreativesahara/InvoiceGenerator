@@ -282,8 +282,9 @@ Public Class FrmProformaInvoice
             .Location = New Point(20, 560),
             .AutoSize = True
         }
+        ' Move the textbox down so there's clear spacing under the label
         txtNote = New TextBox With {
-            .Location = New Point(70, 556),
+            .Location = New Point(70, 584), ' moved down to add spacing below the label
             .Size = New Size(700, 40),
             .Multiline = True,
             .Font = New Font("Segoe UI", 9),
@@ -294,11 +295,11 @@ Public Class FrmProformaInvoice
         lblThanks = New Label With {
             .Text = "Thank you message:",
             .Font = New Font("Segoe UI", 9, FontStyle.Regular),
-            .Location = New Point(20, 606),
+            .Location = New Point(20, 628), ' moved down to remain below the note textbox
             .AutoSize = True
         }
         txtThanks = New TextBox With {
-            .Location = New Point(140, 602),
+            .Location = New Point(140, 624), ' adjusted to sit next to the new label position
             .Size = New Size(630, 40),
             .Multiline = True,
             .Font = New Font("Segoe UI", 9),
@@ -690,7 +691,7 @@ Public Class FrmProformaInvoice
 
         ' Notes (with 1.5 line spacing for note lines)
         Dim baseLeft As Single = 50
-        Dim contentLeftForNote As Single = 70
+        Dim contentLeftForNote As Single = 50
         Dim contentWidthForNote As Single = pageWidth - (contentLeftForNote + 50)
         Dim lineHeightF As Single = g.MeasureString("A", fontNormal).Height
 
