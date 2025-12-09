@@ -94,15 +94,15 @@ Public Class FrmProformaInvoice
         }
 
         lblCompanyName = New Label With {
-            .Text = "ASHTECH ELECTRICALS ENTERPRISE",
+            .Text = "ASHTECH ELECTRICAL ENTERPRISES",
             .Font = New Font("Segoe UI", 16, FontStyle.Bold),
             .Location = New Point(20, 10),
             .AutoSize = True
         }
 
         lblCompanyDetails = New Label With {
-            .Text = "Email: ahtechelectricalenterpriceko@gmail.com" & vbCrLf &
-                    "Contacts: 0702026477 / 0725347169" & vbCrLf &
+            .Text = "Email: ashtechelectrical9@gmail.com" & vbCrLf &
+                    "Contacts: 0702026477 / 0756402504" & vbCrLf &
                     "Nairobi, Kenya",
             .Font = New Font("Segoe UI", 10),
             .Location = New Point(20, 45),
@@ -277,7 +277,7 @@ Public Class FrmProformaInvoice
 
         ' === Note and Thank You (editable) ===
         lblNote = New Label With {
-            .Text = "Note:",
+            .Text = "TERMS AND CONDITIONS:",
             .Font = New Font("Segoe UI", 9, FontStyle.Regular),
             .Location = New Point(20, 560),
             .AutoSize = True
@@ -287,7 +287,8 @@ Public Class FrmProformaInvoice
             .Size = New Size(700, 40),
             .Multiline = True,
             .Font = New Font("Segoe UI", 9),
-            .Text = "All the Logistics and Transport Cost are included in the total cost."
+            .Text = "1. This not being a contract, prices and delivery time quoted are not binding on us." & vbCrLf &
+                    "2. The quoted prices are subject to adjustment arising out of Industrial fluctuations."
         }
 
         lblThanks = New Label With {
@@ -687,10 +688,44 @@ Public Class FrmProformaInvoice
         g.DrawString("Total Cost (KES): " & FormatNumber(txtTotalCost.Text, 2), fontSubHeader, Brushes.Black, 500, y)
         y += 40
 
-        ' Notes
-        g.DrawString("Note: " & txtNote.Text, fontNormal, Brushes.Black, 50, y)
-        y += 18
-        g.DrawString(txtThanks.Text, fontNormal, Brushes.Black, 50, y)
+        ' Notes (with 1.5 line spacing for note lines)
+        Dim baseLeft As Single = 50
+        Dim contentLeftForNote As Single = 70
+        Dim contentWidthForNote As Single = pageWidth - (contentLeftForNote + 50)
+        Dim lineHeightF As Single = g.MeasureString("A", fontNormal).Height
+
+        If txtNote IsNot Nothing Then
+            ' Label
+            g.DrawString("TERMS AND CONDITIONS", fontNormal, Brushes.Black, baseLeft, y)
+            y += CInt(lineHeightF * 1.5)
+
+            ' Draw each line of the note with 1.5 spacing
+            Dim noteLines = txtNote.Text.Split(New String() {vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
+            For Each ln As String In noteLines
+                ' Draw wrapped within contentWidthForNote if needed
+                Dim noteRect As New RectangleF(contentLeftForNote, y, contentWidthForNote, lineHeightF * 4)
+                Dim sfNote As New StringFormat()
+                sfNote.Alignment = StringAlignment.Near
+                sfNote.LineAlignment = StringAlignment.Near
+                g.DrawString(ln.Trim(), fontNormal, Brushes.Black, noteRect, sfNote)
+                ' advance by 1.5x line height
+                y += CInt(lineHeightF * 1.5)
+            Next
+        End If
+
+        ' Add a bit of space before thank-you text (1.5 line spacing)
+        y += CInt(lineHeightF * 1.0)
+        If txtThanks IsNot Nothing Then
+            ' Draw thanks wrapped within same content width
+            Dim thanksRect As New RectangleF(contentLeftForNote, y, contentWidthForNote, lineHeightF * 4)
+            Dim sfThanks As New StringFormat()
+            sfThanks.Alignment = StringAlignment.Near
+            sfThanks.LineAlignment = StringAlignment.Near
+            g.DrawString(txtThanks.Text, fontNormal, Brushes.Black, thanksRect, sfThanks)
+            ' advance y in case further content follows
+            Dim measuredThanks As SizeF = g.MeasureString(txtThanks.Text, fontNormal, New SizeF(contentWidthForNote, 0))
+            y += CInt(measuredThanks.Height) + 2
+        End If
 
     End Sub
 
@@ -976,13 +1011,14 @@ Public Class FrmProformaInvoice
             End If
 
             ' UI is enabled: set appearance based on whether there are items
-            btnPrint.Enabled = True
             If hasItems Then
+                btnPrint.Enabled = True
                 btnPrint.BackColor = btnPrintDefaultBackColor
                 btnPrint.ForeColor = Color.White
                 btnPrint.Cursor = Cursors.Default
                 If toolTip1 IsNot Nothing Then toolTip1.SetToolTip(btnPrint, "Print preview and print the invoice")
             Else
+                btnPrint.Enabled = False
                 btnPrint.BackColor = Color.Gray
                 btnPrint.ForeColor = Color.LightGray
                 btnPrint.Cursor = Cursors.No
