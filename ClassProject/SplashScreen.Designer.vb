@@ -47,7 +47,7 @@ Partial Class SplashScreen
         Me.Label1.Name = "Label1"
         Me.Label1.Size = New System.Drawing.Size(748, 50)
         Me.Label1.TabIndex = 2
-        Me.Label1.Text = "ASHTECH ELECTRICALS ENTERPRISE"
+        Me.Label1.Text = "ASHTECH ELECTRICAL ENTERPRISES"
         '
         'SplashScreen
         '
