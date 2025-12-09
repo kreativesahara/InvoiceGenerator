@@ -32,7 +32,7 @@ Partial Class SplashScreen
         Me.Label2.AutoSize = True
         Me.Label2.Font = New System.Drawing.Font("Segoe Print", 14.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.Label2.ForeColor = System.Drawing.Color.White
-        Me.Label2.Location = New System.Drawing.Point(818, 273)
+        Me.Label2.Location = New System.Drawing.Point(711, 259)
         Me.Label2.Name = "Label2"
         Me.Label2.Size = New System.Drawing.Size(157, 33)
         Me.Label2.TabIndex = 3
@@ -41,11 +41,11 @@ Partial Class SplashScreen
         'Label1
         '
         Me.Label1.AutoSize = True
-        Me.Label1.Font = New System.Drawing.Font("Segoe Print", 36.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.Label1.Font = New System.Drawing.Font("Segoe Print", 26.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.Label1.ForeColor = System.Drawing.SystemColors.ButtonFace
-        Me.Label1.Location = New System.Drawing.Point(24, 188)
+        Me.Label1.Location = New System.Drawing.Point(163, 187)
         Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(981, 85)
+        Me.Label1.Size = New System.Drawing.Size(710, 62)
         Me.Label1.TabIndex = 2
         Me.Label1.Text = "ASHTECH ELECTRICALS ENTERPRISE"
         '
@@ -53,7 +53,7 @@ Partial Class SplashScreen
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(0, Byte), Integer), CType(CType(192, Byte), Integer))
+        Me.BackColor = System.Drawing.Color.Green
         Me.ClientSize = New System.Drawing.Size(998, 498)
         Me.ControlBox = False
         Me.Controls.Add(Me.Label2)
