@@ -4,6 +4,7 @@ Imports Microsoft.VisualBasic
 Imports System.Data.OleDb
 Imports System.Threading.Tasks
 Imports System.Globalization
+Imports System.Drawing.Imaging
 
 Public Class FrmProformaInvoice
     Inherits Form
@@ -592,6 +593,30 @@ Public Class FrmProformaInvoice
         Dim fontSmall As New Font("Segoe UI", 9)
         Dim y As Integer = 20
         Dim pageWidth As Integer = e.PageBounds.Width
+
+        ' --- Draw watermark if present (centered, semi-transparent) ---
+        Try
+            Dim wmPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "InvoiceGenerator", "watermark.png")
+            If File.Exists(wmPath) Then
+                Using img As Image = Image.FromFile(wmPath)
+                    ' Scale watermark to ~60% of page width while preserving aspect ratio
+                    Dim targetWidth As Integer = CInt(pageWidth * 1.0)
+                    Dim scale As Single = targetWidth / img.Width
+                    Dim targetHeight As Integer = CInt(img.Height * scale)
+                    Dim rectX As Integer = CInt((pageWidth - targetWidth) / 2)
+                    Dim rectY As Integer = 60 ' position near the top; adjust as needed
+
+                    Dim cm As New ColorMatrix()
+                    cm.Matrix33 = 0.5F ' opacity (0.0 - 1.0)
+                    Using ia As New ImageAttributes()
+                        ia.SetColorMatrix(cm, ColorMatrixFlag.Default, ColorAdjustType.Bitmap)
+                        g.DrawImage(img, New Rectangle(rectX, rectY, targetWidth, targetHeight), 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, ia)
+                    End Using
+                End Using
+            End If
+        Catch
+            ' don't fail printing if watermark load/draw fails
+        End Try
 
         ' Center company name and details
         Try
