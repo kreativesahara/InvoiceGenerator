@@ -47,7 +47,11 @@ Partial Class SplashScreen
         Me.Label1.Name = "Label1"
         Me.Label1.Size = New System.Drawing.Size(748, 50)
         Me.Label1.TabIndex = 2
+<<<<<<< HEAD
         Me.Label1.Text = "ASHTECH ELECTRICAL ENTERPRISES"
+=======
+        Me.Label1.Text = "Vision Car Invoice Generator"
+>>>>>>> vision-m
         '
         'SplashScreen
         '
