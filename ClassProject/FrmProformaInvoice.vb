@@ -710,7 +710,7 @@ Public Class FrmProformaInvoice
                 ' Description: wrap to next line if wider than allowed width (limit to start of Qty column)
                 Dim descX As Single = 130
                 Dim qtyX As Single = 420
-                Dim descMaxWidth As Single = qtyX - descX - 10F ' leave 10px padding before Qty column
+                Dim descMaxWidth As Single = qtyX - descX - 10.0F ' leave 10px padding before Qty column
                 Dim descRect As New RectangleF(descX, y, descMaxWidth, 2000)
                 Dim sfDesc As New StringFormat()
                 sfDesc.Alignment = StringAlignment.Near
@@ -1134,23 +1134,34 @@ Public Class FrmProformaInvoice
                     Next
 
                     If Not hasInvoices Then
-                        Dim createInvoices As String = "CREATE TABLE Invoices (ID COUNTER PRIMARY KEY, InvoiceSerial TEXT(255), InvoiceDate DATETIME, Client TEXT(255), Total DOUBLE, InvoiceType TEXT(100))"
+                        Dim createInvoices As String = "CREATE TABLE Invoices (ID COUNTER PRIMARY KEY, InvoiceSerial TEXT(255), InvoiceDate DATETIME, Client TEXT(255), ClientAddress TEXT(255), Total DOUBLE, InvoiceType TEXT(100))"
                         Using cmd As New OleDbCommand(createInvoices, conn)
                             cmd.ExecuteNonQuery()
                         End Using
                     Else
-                        ' ensure InvoiceType column exists
+                        ' ensure ClientAddress and InvoiceType columns exist
                         Try
                             Dim cols = conn.GetSchema("Columns")
                             Dim hasInvoiceType As Boolean = False
+                            Dim hasClientAddress As Boolean = False
                             For Each cr As DataRow In cols.Rows
                                 Dim tn = Convert.ToString(cr("TABLE_NAME"))
                                 Dim colName = Convert.ToString(cr("COLUMN_NAME"))
-                                If String.Equals(tn, "Invoices", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(colName, "InvoiceType", StringComparison.OrdinalIgnoreCase) Then
-                                    hasInvoiceType = True
-                                    Exit For
+                                If String.Equals(tn, "Invoices", StringComparison.OrdinalIgnoreCase) Then
+                                    If String.Equals(colName, "InvoiceType", StringComparison.OrdinalIgnoreCase) Then
+                                        hasInvoiceType = True
+                                    End If
+                                    If String.Equals(colName, "ClientAddress", StringComparison.OrdinalIgnoreCase) Then
+                                        hasClientAddress = True
+                                    End If
                                 End If
+                                If hasInvoiceType AndAlso hasClientAddress Then Exit For
                             Next
+                            If Not hasClientAddress Then
+                                Using alterCmd As New OleDbCommand("ALTER TABLE Invoices ADD COLUMN ClientAddress TEXT(255)", conn)
+                                    alterCmd.ExecuteNonQuery()
+                                End Using
+                            End If
                             If Not hasInvoiceType Then
                                 Using alterCmd As New OleDbCommand("ALTER TABLE Invoices ADD COLUMN InvoiceType TEXT(100)", conn)
                                     alterCmd.ExecuteNonQuery()
@@ -1192,11 +1203,13 @@ Public Class FrmProformaInvoice
                              conn.Open()
                              ' Validate header fields on UI thread
                              Dim billedTo = String.Empty
+                             Dim clientAddress = String.Empty
                              Dim invoiceDate As DateTime = DateTime.UtcNow
                              Dim total As Decimal = 0D
                              Dim invoiceType As String = String.Empty
                              Me.Invoke(Sub()
                                            billedTo = txtBilledTo.Text.Trim()
+                                           clientAddress = txtAddress.Text.Trim()
                                            invoiceDate = dtpInvoiceDate.Value
                                            Decimal.TryParse(txtTotalCost.Text, NumberStyles.Number, CultureInfo.CurrentCulture, total)
                                            invoiceType = If(cmbInvoiceType IsNot Nothing, cmbInvoiceType.Text, String.Empty)
@@ -1206,12 +1219,13 @@ Public Class FrmProformaInvoice
                                  Return
                              End If
                              ' Insert header - explicit parameter types and strongly-typed values
-                             Dim cmd As New OleDbCommand("INSERT INTO Invoices (InvoiceSerial, InvoiceDate, Client, Total, InvoiceType) VALUES (?, ?, ?, ?, ?)", conn)
+                             Dim cmd As New OleDbCommand("INSERT INTO Invoices (InvoiceSerial, InvoiceDate, Client, ClientAddress, Total, InvoiceType) VALUES (?, ?, ?, ?, ?, ?)", conn)
                              cmd.Parameters.Add("p1", OleDbType.VarWChar).Value = If(txtInvoiceSerial IsNot Nothing, txtInvoiceSerial.Text, "")
                              cmd.Parameters.Add("p2", OleDbType.Date).Value = invoiceDate
                              cmd.Parameters.Add("p3", OleDbType.VarWChar).Value = billedTo
-                             cmd.Parameters.Add("p4", OleDbType.Double).Value = Convert.ToDouble(total)
-                             cmd.Parameters.Add("p5", OleDbType.VarWChar).Value = invoiceType
+                             cmd.Parameters.Add("p4", OleDbType.VarWChar).Value = clientAddress
+                             cmd.Parameters.Add("p5", OleDbType.Double).Value = Convert.ToDouble(total)
+                             cmd.Parameters.Add("p6", OleDbType.VarWChar).Value = invoiceType
                              cmd.ExecuteNonQuery()
                              ' Get generated ID
                              Dim idCmd As New OleDbCommand("SELECT @@IDENTITY", conn)
@@ -1266,7 +1280,7 @@ Public Class FrmProformaInvoice
                          Dim connStr = GetConnectionString()
                          Using conn As New OleDbConnection(connStr)
                              conn.Open()
-                             Dim cmd As New OleDbCommand("SELECT InvoiceSerial, InvoiceDate, Client, Total, InvoiceType FROM Invoices WHERE ID = ?", conn)
+                             Dim cmd As New OleDbCommand("SELECT InvoiceSerial, InvoiceDate, Client, ClientAddress, Total, InvoiceType FROM Invoices WHERE ID = ?", conn)
                              cmd.Parameters.Add("p1", OleDbType.Integer).Value = id
                              Using reader = cmd.ExecuteReader()
                                  If reader.Read() Then
@@ -1274,16 +1288,18 @@ Public Class FrmProformaInvoice
                                      Dim serial As String = If(reader.IsDBNull(0), String.Empty, Convert.ToString(reader.GetValue(0)))
                                      Dim dt As DateTime = If(reader.IsDBNull(1), DateTime.Now, Convert.ToDateTime(reader.GetValue(1)))
                                      Dim client As String = If(reader.IsDBNull(2), String.Empty, Convert.ToString(reader.GetValue(2)))
+                                     Dim clientAddr As String = If(reader.IsDBNull(3), String.Empty, Convert.ToString(reader.GetValue(3)))
                                      Dim total As Double = 0D
-                                     If Not reader.IsDBNull(3) Then
-                                         total = Convert.ToDouble(reader.GetValue(3))
+                                     If Not reader.IsDBNull(4) Then
+                                         total = Convert.ToDouble(reader.GetValue(4))
                                      End If
-                                     Dim invoiceType As String = If(reader.IsDBNull(4), String.Empty, Convert.ToString(reader.GetValue(4)))
+                                     Dim invoiceType As String = If(reader.IsDBNull(5), String.Empty, Convert.ToString(reader.GetValue(5)))
 
                                      Me.Invoke(Sub()
                                                    txtInvoiceSerial.Text = serial
                                                    dtpInvoiceDate.Value = dt
                                                    txtBilledTo.Text = client
+                                                   txtAddress.Text = clientAddr
                                                    If cmbInvoiceType IsNot Nothing Then cmbInvoiceType.Text = invoiceType
                                                    txtTotalCost.Text = total.ToString("N2")
                                                    dgvInvoiceItems.Rows.Clear()
@@ -1337,15 +1353,16 @@ Public Class FrmProformaInvoice
                          Using conn As New OleDbConnection(connStr)
                              conn.Open()
                              ' basic header update (client, date, total, type)
-                             Dim updateCmd As New OleDbCommand("UPDATE Invoices SET InvoiceSerial = ?, InvoiceDate = ?, Client = ?, Total = ?, InvoiceType = ? WHERE ID = ?", conn)
+                             Dim updateCmd As New OleDbCommand("UPDATE Invoices SET InvoiceSerial = ?, InvoiceDate = ?, Client = ?, ClientAddress = ?, Total = ?, InvoiceType = ? WHERE ID = ?", conn)
                              updateCmd.Parameters.Add("p1", OleDbType.VarWChar).Value = txtInvoiceSerial.Text
                              updateCmd.Parameters.Add("p2", OleDbType.Date).Value = dtpInvoiceDate.Value
                              updateCmd.Parameters.Add("p3", OleDbType.VarWChar).Value = txtBilledTo.Text
+                             updateCmd.Parameters.Add("p4", OleDbType.VarWChar).Value = txtAddress.Text
                              Dim tot As Double = 0D
                              Double.TryParse(txtTotalCost.Text, NumberStyles.Number, CultureInfo.CurrentCulture, tot)
-                             updateCmd.Parameters.Add("p4", OleDbType.Double).Value = tot
-                             updateCmd.Parameters.Add("p5", OleDbType.VarWChar).Value = If(cmbInvoiceType IsNot Nothing, cmbInvoiceType.Text, String.Empty)
-                             updateCmd.Parameters.Add("p6", OleDbType.Integer).Value = editingInvoiceId
+                             updateCmd.Parameters.Add("p5", OleDbType.Double).Value = tot
+                             updateCmd.Parameters.Add("p6", OleDbType.VarWChar).Value = If(cmbInvoiceType IsNot Nothing, cmbInvoiceType.Text, String.Empty)
+                             updateCmd.Parameters.Add("p7", OleDbType.Integer).Value = editingInvoiceId
                              updateCmd.ExecuteNonQuery()
                              ' For simplicity, delete existing items and reinsert current grid items
                              Dim delCmd As New OleDbCommand("DELETE FROM InvoiceItems WHERE InvoiceID = ?", conn)
