@@ -698,12 +698,36 @@ Public Class FrmProformaInvoice
         ' Table Items
         For Each row As DataGridViewRow In dgvInvoiceItems.Rows
             If Not row.IsNewRow Then
-                g.DrawString(Convert.ToString(row.Cells("ItemNo").Value), fontNormal, Brushes.Black, 50, y)
-                g.DrawString(Convert.ToString(row.Cells("Description").Value), fontNormal, Brushes.Black, 130, y)
-                g.DrawString(Convert.ToString(row.Cells("Qty").Value), fontNormal, Brushes.Black, 420, y)
-                g.DrawString(FormatNumber(row.Cells("UnitPrice").Value, 2), fontNormal, Brushes.Black, 500, y)
-                g.DrawString(FormatNumber(row.Cells("Amount").Value, 2), fontNormal, Brushes.Black, 620, y)
-                y += 22
+                Dim itemNoText = Convert.ToString(row.Cells("ItemNo").Value)
+                Dim descText = Convert.ToString(row.Cells("Description").Value)
+                Dim qtyText = Convert.ToString(row.Cells("Qty").Value)
+                Dim unitPriceText = FormatNumber(row.Cells("UnitPrice").Value, 2)
+                Dim amountText = FormatNumber(row.Cells("Amount").Value, 2)
+
+                ' Draw item number
+                g.DrawString(itemNoText, fontNormal, Brushes.Black, 50, y)
+
+                ' Description: wrap to next line if wider than allowed width (limit to start of Qty column)
+                Dim descX As Single = 130
+                Dim qtyX As Single = 420
+                Dim descMaxWidth As Single = qtyX - descX - 10F ' leave 10px padding before Qty column
+                Dim descRect As New RectangleF(descX, y, descMaxWidth, 2000)
+                Dim sfDesc As New StringFormat()
+                sfDesc.Alignment = StringAlignment.Near
+                sfDesc.LineAlignment = StringAlignment.Near
+
+                ' Measure wrapped height and draw
+                Dim measuredDesc As SizeF = g.MeasureString(descText, fontNormal, New SizeF(descMaxWidth, 2000))
+                g.DrawString(descText, fontNormal, Brushes.Black, descRect, sfDesc)
+
+                ' Draw other columns aligned to the top of the description area
+                g.DrawString(qtyText, fontNormal, Brushes.Black, qtyX, y)
+                g.DrawString(unitPriceText, fontNormal, Brushes.Black, 500, y)
+                g.DrawString(amountText, fontNormal, Brushes.Black, 620, y)
+
+                ' Advance y by the height of the description (ensure minimum row height)
+                Dim advance As Integer = Math.Max(22, CInt(measuredDesc.Height))
+                y += advance
             End If
         Next
 
