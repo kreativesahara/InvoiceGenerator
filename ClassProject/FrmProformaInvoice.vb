@@ -95,16 +95,15 @@ Public Class FrmProformaInvoice
         }
 
         lblCompanyName = New Label With {
-            .Text = "ASHTECH ELECTRICAL ENTERPRISES",
+            .Text = "VISION CAR CLINIC AUTOCARE",
             .Font = New Font("Segoe UI", 16, FontStyle.Bold),
             .Location = New Point(20, 10),
             .AutoSize = True
         }
 
         lblCompanyDetails = New Label With {
-            .Text = "Email: ashtechelectrical9@gmail.com" & vbCrLf &
-                    "Contacts: 0702026477 / 0756402504" & vbCrLf &
-                    "Nairobi, Kenya",
+            .Text = "Contacts: 0721267960  |  Email: wilsionwainaina12@gmail.com" & vbCrLf &
+                    "Karen, 1661-00502, Nairobi",
             .Font = New Font("Segoe UI", 10),
             .Location = New Point(20, 45),
             .AutoSize = True
@@ -224,7 +223,7 @@ Public Class FrmProformaInvoice
         dtpInvoiceDate = New DateTimePicker With {.Location = New Point(600, 128), .Width = 150}
 
         lblAddress = New Label With {
-            .Text = "Address:",
+            .Text = "Fleet Info:",
             .Location = New Point(20, 160),
             .Font = New Font("Segoe UI", 10),
             .AutoSize = True,
@@ -561,9 +560,21 @@ Public Class FrmProformaInvoice
             dgvInvoiceItems.Rows.Clear()
             txtTotalCost.Text = "0.00"
             UpdatePrintButtonState()
+            ' Reset client/customer fields
+            ResetClientFields()
             ' Reset invoice serial when starting a fresh invoice
             SetNewInvoiceSerial()
         End If
+    End Sub
+
+    ' Reset customer fields (Bill To and Address) when clearing invoice
+    Private Sub ResetClientFields()
+        Try
+            If txtBilledTo IsNot Nothing Then txtBilledTo.Text = String.Empty
+            If txtAddress IsNot Nothing Then txtAddress.Text = String.Empty
+        Catch
+            ' ignore
+        End Try
     End Sub
 
     ' === Print Logic ===
@@ -623,12 +634,13 @@ Public Class FrmProformaInvoice
             Dim compName As String = If(lblCompanyName IsNot Nothing, lblCompanyName.Text, String.Empty)
             If Not String.IsNullOrEmpty(compName) Then
                 Dim nameWidth = g.MeasureString(compName, fontHeader).Width
-                g.DrawString(compName, fontHeader, Brushes.Green, (pageWidth - nameWidth) / 2, y)
+                g.DrawString(compName, fontHeader, Brushes.Black, (pageWidth - nameWidth) / 2, y)
                 y += CInt(g.MeasureString(compName, fontHeader).Height) + 4
             End If
 
             ' Add company services line
-            Dim servicesText As String = "Dealers in: installation of CCTV, Electrical Fence, Power backups, internet solution, DSTV, Container Installation Professional, piping and Cabling, solar solution etc."
+            Dim servicesText As String = "Dealers in: Motor Vehicle Mechanics and Repair, Car Diagnosis, Wiring System, Gas Welding,
+                                          Car Paint, Car Buffing, Puncture Repair and Tyre Change."
             If Not String.IsNullOrEmpty(servicesText) Then
                 ' Center services text within the same left/right margins used by the rest of the content (50px margin)
                 Dim contentLeft As Single = 50
@@ -637,7 +649,7 @@ Public Class FrmProformaInvoice
                 Dim sfCenter As New StringFormat()
                 sfCenter.Alignment = StringAlignment.Center
                 sfCenter.LineAlignment = StringAlignment.Near
-                g.DrawString(servicesText, fontSmall, Brushes.Green, servicesRect, sfCenter)
+                g.DrawString(servicesText, fontSmall, Brushes.Black, servicesRect, sfCenter)
                 ' measure height within the constrained width to advance y correctly
                 Dim measured As SizeF = g.MeasureString(servicesText, fontSmall, New SizeF(contentWidth, 0))
                 y += CInt(measured.Height) + 4
@@ -650,7 +662,7 @@ Public Class FrmProformaInvoice
                     Dim lineText = line.Trim()
                     If lineText = String.Empty Then Continue For
                     Dim lineWidth = g.MeasureString(lineText, fontNormal).Width
-                    g.DrawString(lineText, fontNormal, Brushes.Green, (pageWidth - lineWidth) / 2, y)
+                    g.DrawString(lineText, fontNormal, Brushes.Black, (pageWidth - lineWidth) / 2, y)
                     y += CInt(g.MeasureString(lineText, fontNormal).Height) + 2
                 Next
             End If
@@ -666,52 +678,76 @@ Public Class FrmProformaInvoice
             Dim title = If(lblInvoiceTitle IsNot Nothing, lblInvoiceTitle.Text, String.Empty)
             If Not String.IsNullOrEmpty(title) Then
                 Dim titleWidth = g.MeasureString(title, fontHeader).Width
-                g.DrawString(title, fontHeader, Brushes.Green, (pageWidth - titleWidth) / 2, y)
+                g.DrawString(title, fontHeader, Brushes.Black, (pageWidth - titleWidth) / 2, y)
                 y += CInt(g.MeasureString(title, fontHeader).Height) + 12
             End If
         Catch
         End Try
 
         ' Client Info
-        g.DrawString("Billed To: " & txtBilledTo.Text, fontNormal, Brushes.Green, 50, y)
-        g.DrawString("Invoice Date: " & dtpInvoiceDate.Value.ToShortDateString(), fontNormal, Brushes.Green, 500, y)
+        g.DrawString("Billed To: " & txtBilledTo.Text, fontNormal, Brushes.Black, 50, y)
+        g.DrawString("Invoice Date: " & dtpInvoiceDate.Value.ToShortDateString(), fontNormal, Brushes.Black, 500, y)
         y += 20
 
-        g.DrawString("Address: " & txtAddress.Text, fontNormal, Brushes.Green, 500, y)
-        g.DrawString("Invoice Serial: " & txtInvoiceSerial.Text, fontNormal, Brushes.Green, 50, y)
+        g.DrawString("Fleet Info: " & txtAddress.Text, fontNormal, Brushes.Black, 500, y)
+        g.DrawString("Invoice Serial: " & txtInvoiceSerial.Text, fontNormal, Brushes.Black, 50, y)
         y += 30
 
         ' Table Header
-        g.DrawLine(Pens.Green, 40, y, 760, y)
+        g.DrawLine(Pens.Black, 40, y, 760, y)
         y += 5
 
-        g.DrawString("ITEM NO.", fontSubHeader, Brushes.Green, 50, y)
-        g.DrawString("DESCRIPTION", fontSubHeader, Brushes.Green, 130, y)
-        g.DrawString("QTY", fontSubHeader, Brushes.Green, 420, y)
-        g.DrawString("UNIT PRICE", fontSubHeader, Brushes.Green, 500, y)
-        g.DrawString("AMOUNT", fontSubHeader, Brushes.Green, 620, y)
+        g.DrawString("ITEM NO.", fontSubHeader, Brushes.Black, 50, y)
+        g.DrawString("DESCRIPTION", fontSubHeader, Brushes.Black, 130, y)
+        g.DrawString("QTY", fontSubHeader, Brushes.Black, 420, y)
+        g.DrawString("UNIT PRICE", fontSubHeader, Brushes.Black, 500, y)
+        g.DrawString("AMOUNT", fontSubHeader, Brushes.Black, 620, y)
         y += 25
 
-        g.DrawLine(Pens.Green, 40, y, 760, y)
+        g.DrawLine(Pens.Black, 40, y, 760, y)
         y += 5
 
         ' Table Items
         For Each row As DataGridViewRow In dgvInvoiceItems.Rows
             If Not row.IsNewRow Then
-                g.DrawString(Convert.ToString(row.Cells("ItemNo").Value), fontNormal, Brushes.Green, 50, y)
-                g.DrawString(Convert.ToString(row.Cells("Description").Value), fontNormal, Brushes.Green, 130, y)
-                g.DrawString(Convert.ToString(row.Cells("Qty").Value), fontNormal, Brushes.Green, 420, y)
-                g.DrawString(FormatNumber(row.Cells("UnitPrice").Value, 2), fontNormal, Brushes.Green, 500, y)
-                g.DrawString(FormatNumber(row.Cells("Amount").Value, 2), fontNormal, Brushes.Green, 620, y)
-                y += 22
+                Dim itemNoText = Convert.ToString(row.Cells("ItemNo").Value)
+                Dim descText = Convert.ToString(row.Cells("Description").Value)
+                Dim qtyText = Convert.ToString(row.Cells("Qty").Value)
+                Dim unitPriceText = FormatNumber(row.Cells("UnitPrice").Value, 2)
+                Dim amountText = FormatNumber(row.Cells("Amount").Value, 2)
+
+                ' Draw item number
+                g.DrawString(itemNoText, fontNormal, Brushes.Black, 50, y)
+
+                ' Description: wrap to next line if wider than allowed width (limit to start of Qty column)
+                Dim descX As Single = 130
+                Dim qtyX As Single = 420
+                Dim descMaxWidth As Single = qtyX - descX - 10.0F ' leave 10px padding before Qty column
+                Dim descRect As New RectangleF(descX, y, descMaxWidth, 2000)
+                Dim sfDesc As New StringFormat()
+                sfDesc.Alignment = StringAlignment.Near
+                sfDesc.LineAlignment = StringAlignment.Near
+
+                ' Measure wrapped height and draw
+                Dim measuredDesc As SizeF = g.MeasureString(descText, fontNormal, New SizeF(descMaxWidth, 2000))
+                g.DrawString(descText, fontNormal, Brushes.Black, descRect, sfDesc)
+
+                ' Draw other columns aligned to the top of the description area
+                g.DrawString(qtyText, fontNormal, Brushes.Black, qtyX, y)
+                g.DrawString(unitPriceText, fontNormal, Brushes.Black, 500, y)
+                g.DrawString(amountText, fontNormal, Brushes.Black, 620, y)
+
+                ' Advance y by the height of the description (ensure minimum row height)
+                Dim advance As Integer = Math.Max(22, CInt(measuredDesc.Height))
+                y += advance
             End If
         Next
 
-        g.DrawLine(Pens.Green, 40, y, 760, y)
+        g.DrawLine(Pens.Black, 40, y, 760, y)
         y += 20
 
         ' Total
-        g.DrawString("Total Cost (KES): " & FormatNumber(txtTotalCost.Text, 2), fontSubHeader, Brushes.Green, 500, y)
+        g.DrawString("Total Cost (KES): " & FormatNumber(txtTotalCost.Text, 2), fontSubHeader, Brushes.Black, 500, y)
         y += 40
 
         ' Notes (with 1.5 line spacing for note lines)
@@ -722,7 +758,7 @@ Public Class FrmProformaInvoice
 
         If txtNote IsNot Nothing Then
             ' Label
-            g.DrawString("TERMS AND CONDITIONS", fontNormal, Brushes.Green, baseLeft, y)
+            g.DrawString("TERMS AND CONDITIONS", fontNormal, Brushes.Black, baseLeft, y)
             y += CInt(lineHeightF * 1.5)
 
             ' Draw each line of the note with 1.5 spacing
@@ -733,7 +769,7 @@ Public Class FrmProformaInvoice
                 Dim sfNote As New StringFormat()
                 sfNote.Alignment = StringAlignment.Near
                 sfNote.LineAlignment = StringAlignment.Near
-                g.DrawString(ln.Trim(), fontNormal, Brushes.Green, noteRect, sfNote)
+                g.DrawString(ln.Trim(), fontNormal, Brushes.Black, noteRect, sfNote)
                 ' advance by 1.5x line height
                 y += CInt(lineHeightF * 1.5)
             Next
@@ -747,7 +783,7 @@ Public Class FrmProformaInvoice
             Dim sfThanks As New StringFormat()
             sfThanks.Alignment = StringAlignment.Near
             sfThanks.LineAlignment = StringAlignment.Near
-            g.DrawString(txtThanks.Text, fontNormal, Brushes.Green, thanksRect, sfThanks)
+            g.DrawString(txtThanks.Text, fontNormal, Brushes.Black, thanksRect, sfThanks)
             ' advance y in case further content follows
             Dim measuredThanks As SizeF = g.MeasureString(txtThanks.Text, fontNormal, New SizeF(contentWidthForNote, 0))
             y += CInt(measuredThanks.Height) + 2
@@ -1110,23 +1146,34 @@ Public Class FrmProformaInvoice
                     Next
 
                     If Not hasInvoices Then
-                        Dim createInvoices As String = "CREATE TABLE Invoices (ID COUNTER PRIMARY KEY, InvoiceSerial TEXT(255), InvoiceDate DATETIME, Client TEXT(255), Total DOUBLE, InvoiceType TEXT(100))"
+                        Dim createInvoices As String = "CREATE TABLE Invoices (ID COUNTER PRIMARY KEY, InvoiceSerial TEXT(255), InvoiceDate DATETIME, Client TEXT(255), ClientAddress TEXT(255), Total DOUBLE, InvoiceType TEXT(100))"
                         Using cmd As New OleDbCommand(createInvoices, conn)
                             cmd.ExecuteNonQuery()
                         End Using
                     Else
-                        ' ensure InvoiceType column exists
+                        ' ensure ClientAddress and InvoiceType columns exist
                         Try
                             Dim cols = conn.GetSchema("Columns")
                             Dim hasInvoiceType As Boolean = False
+                            Dim hasClientAddress As Boolean = False
                             For Each cr As DataRow In cols.Rows
                                 Dim tn = Convert.ToString(cr("TABLE_NAME"))
                                 Dim colName = Convert.ToString(cr("COLUMN_NAME"))
-                                If String.Equals(tn, "Invoices", StringComparison.OrdinalIgnoreCase) AndAlso String.Equals(colName, "InvoiceType", StringComparison.OrdinalIgnoreCase) Then
-                                    hasInvoiceType = True
-                                    Exit For
+                                If String.Equals(tn, "Invoices", StringComparison.OrdinalIgnoreCase) Then
+                                    If String.Equals(colName, "InvoiceType", StringComparison.OrdinalIgnoreCase) Then
+                                        hasInvoiceType = True
+                                    End If
+                                    If String.Equals(colName, "ClientAddress", StringComparison.OrdinalIgnoreCase) Then
+                                        hasClientAddress = True
+                                    End If
                                 End If
+                                If hasInvoiceType AndAlso hasClientAddress Then Exit For
                             Next
+                            If Not hasClientAddress Then
+                                Using alterCmd As New OleDbCommand("ALTER TABLE Invoices ADD COLUMN ClientAddress TEXT(255)", conn)
+                                    alterCmd.ExecuteNonQuery()
+                                End Using
+                            End If
                             If Not hasInvoiceType Then
                                 Using alterCmd As New OleDbCommand("ALTER TABLE Invoices ADD COLUMN InvoiceType TEXT(100)", conn)
                                     alterCmd.ExecuteNonQuery()
@@ -1168,11 +1215,13 @@ Public Class FrmProformaInvoice
                              conn.Open()
                              ' Validate header fields on UI thread
                              Dim billedTo = String.Empty
+                             Dim clientAddress = String.Empty
                              Dim invoiceDate As DateTime = DateTime.UtcNow
                              Dim total As Decimal = 0D
                              Dim invoiceType As String = String.Empty
                              Me.Invoke(Sub()
                                            billedTo = txtBilledTo.Text.Trim()
+                                           clientAddress = txtAddress.Text.Trim()
                                            invoiceDate = dtpInvoiceDate.Value
                                            Decimal.TryParse(txtTotalCost.Text, NumberStyles.Number, CultureInfo.CurrentCulture, total)
                                            invoiceType = If(cmbInvoiceType IsNot Nothing, cmbInvoiceType.Text, String.Empty)
@@ -1182,12 +1231,13 @@ Public Class FrmProformaInvoice
                                  Return
                              End If
                              ' Insert header - explicit parameter types and strongly-typed values
-                             Dim cmd As New OleDbCommand("INSERT INTO Invoices (InvoiceSerial, InvoiceDate, Client, Total, InvoiceType) VALUES (?, ?, ?, ?, ?)", conn)
+                             Dim cmd As New OleDbCommand("INSERT INTO Invoices (InvoiceSerial, InvoiceDate, Client, ClientAddress, Total, InvoiceType) VALUES (?, ?, ?, ?, ?, ?)", conn)
                              cmd.Parameters.Add("p1", OleDbType.VarWChar).Value = If(txtInvoiceSerial IsNot Nothing, txtInvoiceSerial.Text, "")
                              cmd.Parameters.Add("p2", OleDbType.Date).Value = invoiceDate
                              cmd.Parameters.Add("p3", OleDbType.VarWChar).Value = billedTo
-                             cmd.Parameters.Add("p4", OleDbType.Double).Value = Convert.ToDouble(total)
-                             cmd.Parameters.Add("p5", OleDbType.VarWChar).Value = invoiceType
+                             cmd.Parameters.Add("p4", OleDbType.VarWChar).Value = clientAddress
+                             cmd.Parameters.Add("p5", OleDbType.Double).Value = Convert.ToDouble(total)
+                             cmd.Parameters.Add("p6", OleDbType.VarWChar).Value = invoiceType
                              cmd.ExecuteNonQuery()
                              ' Get generated ID
                              Dim idCmd As New OleDbCommand("SELECT @@IDENTITY", conn)
@@ -1242,7 +1292,7 @@ Public Class FrmProformaInvoice
                          Dim connStr = GetConnectionString()
                          Using conn As New OleDbConnection(connStr)
                              conn.Open()
-                             Dim cmd As New OleDbCommand("SELECT InvoiceSerial, InvoiceDate, Client, Total, InvoiceType FROM Invoices WHERE ID = ?", conn)
+                             Dim cmd As New OleDbCommand("SELECT InvoiceSerial, InvoiceDate, Client, ClientAddress, Total, InvoiceType FROM Invoices WHERE ID = ?", conn)
                              cmd.Parameters.Add("p1", OleDbType.Integer).Value = id
                              Using reader = cmd.ExecuteReader()
                                  If reader.Read() Then
@@ -1250,16 +1300,18 @@ Public Class FrmProformaInvoice
                                      Dim serial As String = If(reader.IsDBNull(0), String.Empty, Convert.ToString(reader.GetValue(0)))
                                      Dim dt As DateTime = If(reader.IsDBNull(1), DateTime.Now, Convert.ToDateTime(reader.GetValue(1)))
                                      Dim client As String = If(reader.IsDBNull(2), String.Empty, Convert.ToString(reader.GetValue(2)))
+                                     Dim clientAddr As String = If(reader.IsDBNull(3), String.Empty, Convert.ToString(reader.GetValue(3)))
                                      Dim total As Double = 0D
-                                     If Not reader.IsDBNull(3) Then
-                                         total = Convert.ToDouble(reader.GetValue(3))
+                                     If Not reader.IsDBNull(4) Then
+                                         total = Convert.ToDouble(reader.GetValue(4))
                                      End If
-                                     Dim invoiceType As String = If(reader.IsDBNull(4), String.Empty, Convert.ToString(reader.GetValue(4)))
+                                     Dim invoiceType As String = If(reader.IsDBNull(5), String.Empty, Convert.ToString(reader.GetValue(5)))
 
                                      Me.Invoke(Sub()
                                                    txtInvoiceSerial.Text = serial
                                                    dtpInvoiceDate.Value = dt
                                                    txtBilledTo.Text = client
+                                                   txtAddress.Text = clientAddr
                                                    If cmbInvoiceType IsNot Nothing Then cmbInvoiceType.Text = invoiceType
                                                    txtTotalCost.Text = total.ToString("N2")
                                                    dgvInvoiceItems.Rows.Clear()
@@ -1313,15 +1365,16 @@ Public Class FrmProformaInvoice
                          Using conn As New OleDbConnection(connStr)
                              conn.Open()
                              ' basic header update (client, date, total, type)
-                             Dim updateCmd As New OleDbCommand("UPDATE Invoices SET InvoiceSerial = ?, InvoiceDate = ?, Client = ?, Total = ?, InvoiceType = ? WHERE ID = ?", conn)
+                             Dim updateCmd As New OleDbCommand("UPDATE Invoices SET InvoiceSerial = ?, InvoiceDate = ?, Client = ?, ClientAddress = ?, Total = ?, InvoiceType = ? WHERE ID = ?", conn)
                              updateCmd.Parameters.Add("p1", OleDbType.VarWChar).Value = txtInvoiceSerial.Text
                              updateCmd.Parameters.Add("p2", OleDbType.Date).Value = dtpInvoiceDate.Value
                              updateCmd.Parameters.Add("p3", OleDbType.VarWChar).Value = txtBilledTo.Text
+                             updateCmd.Parameters.Add("p4", OleDbType.VarWChar).Value = txtAddress.Text
                              Dim tot As Double = 0D
                              Double.TryParse(txtTotalCost.Text, NumberStyles.Number, CultureInfo.CurrentCulture, tot)
-                             updateCmd.Parameters.Add("p4", OleDbType.Double).Value = tot
-                             updateCmd.Parameters.Add("p5", OleDbType.VarWChar).Value = If(cmbInvoiceType IsNot Nothing, cmbInvoiceType.Text, String.Empty)
-                             updateCmd.Parameters.Add("p6", OleDbType.Integer).Value = editingInvoiceId
+                             updateCmd.Parameters.Add("p5", OleDbType.Double).Value = tot
+                             updateCmd.Parameters.Add("p6", OleDbType.VarWChar).Value = If(cmbInvoiceType IsNot Nothing, cmbInvoiceType.Text, String.Empty)
+                             updateCmd.Parameters.Add("p7", OleDbType.Integer).Value = editingInvoiceId
                              updateCmd.ExecuteNonQuery()
                              ' For simplicity, delete existing items and reinsert current grid items
                              Dim delCmd As New OleDbCommand("DELETE FROM InvoiceItems WHERE InvoiceID = ?", conn)
