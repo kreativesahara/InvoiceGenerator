@@ -560,9 +560,21 @@ Public Class FrmProformaInvoice
             dgvInvoiceItems.Rows.Clear()
             txtTotalCost.Text = "0.00"
             UpdatePrintButtonState()
+            ' Reset client/customer fields
+            ResetClientFields()
             ' Reset invoice serial when starting a fresh invoice
             SetNewInvoiceSerial()
         End If
+    End Sub
+
+    ' Reset customer fields (Bill To and Address) when clearing invoice
+    Private Sub ResetClientFields()
+        Try
+            If txtBilledTo IsNot Nothing Then txtBilledTo.Text = String.Empty
+            If txtAddress IsNot Nothing Then txtAddress.Text = String.Empty
+        Catch
+            ' ignore
+        End Try
     End Sub
 
     ' === Print Logic ===
