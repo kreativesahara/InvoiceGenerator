@@ -16,15 +16,15 @@ C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Cl
 C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\ClassProject.SplashScreen.resources
 C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\ClassProject.vbproj.GenerateResource.cache
 C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\ClassProject.vbproj.CoreCompileInputs.cache
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Invoice Generator v.1.0.2.exe.config
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Invoice Generator v.1.0.2.exe.manifest
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Invoice Generator v.1.0.2.application
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Invoice Generator v.1.0.2.exe
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Invoice Generator v.1.0.2.pdb
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Invoice Generator v.1.0.2.xml
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Invoice Generator v.1.0.2.exe.manifest
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Invoice Generator v.1.0.2.application
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Invoice Generator v.1.0.2.exe
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Invoice Generator v.1.0.2.xml
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Invoice Generator v.1.0.2.pdb
-C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Invoice Generator v.1.0.2.exe.config
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Mwasidi Invoice Generator v.1.0.2.exe.config
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Mwasidi Invoice Generator v.1.0.2.exe.manifest
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Mwasidi Invoice Generator v.1.0.2.application
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Mwasidi Invoice Generator v.1.0.2.exe
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Mwasidi Invoice Generator v.1.0.2.pdb
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\bin\Debug\Mwasidi Invoice Generator v.1.0.2.xml
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Mwasidi Invoice Generator v.1.0.2.exe.manifest
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Mwasidi Invoice Generator v.1.0.2.application
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Mwasidi Invoice Generator v.1.0.2.exe
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Mwasidi Invoice Generator v.1.0.2.xml
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Mwasidi Invoice Generator v.1.0.2.pdb
+C:\Users\kreative Sahara\Source\Repos\InvoiceGenerator\ClassProject\obj\Debug\Mwasidi Invoice Generator v.1.0.2.exe.config
