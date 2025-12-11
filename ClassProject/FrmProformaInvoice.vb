@@ -627,7 +627,8 @@ Public Class FrmProformaInvoice
             End If
 
             ' Add company services line
-            Dim servicesText As String = "Dealers in: installation of CCTV, Electrical Fence, Power backups, internet solution, DSTV, Container Installation Professional, piping and Cabling, solar solution etc."
+            Dim servicesText As String = "Dealers in: Motor Vehicle Mechanics and Repair, Car Diagnosis, Wiring System, Gas Welding,
+                                          Car Paint, Car Buffing, Puncture Repair and Tyre Change."
             If Not String.IsNullOrEmpty(servicesText) Then
                 ' Center services text within the same left/right margins used by the rest of the content (50px margin)
                 Dim contentLeft As Single = 50
