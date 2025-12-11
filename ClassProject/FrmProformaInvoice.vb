@@ -95,25 +95,15 @@ Public Class FrmProformaInvoice
         }
 
         lblCompanyName = New Label With {
-<<<<<<< HEAD
-            .Text = "ASHTECH ELECTRICAL ENTERPRISES",
-=======
             .Text = "VISION CAR CLINIC AUTOCARE",
->>>>>>> vision-m
             .Font = New Font("Segoe UI", 16, FontStyle.Bold),
             .Location = New Point(20, 10),
             .AutoSize = True
         }
 
         lblCompanyDetails = New Label With {
-<<<<<<< HEAD
-            .Text = "Email: ashtechelectrical9@gmail.com" & vbCrLf &
-                    "Contacts: 0702026477 / 0756402504" & vbCrLf &
-                    "Nairobi, Kenya",
-=======
             .Text = "Karen, 1661-00502, Nairobi" & vbCrLf &
                     "Contacts: 0721267960  |  Email: wilsionwainaina12@gmail.com",
->>>>>>> vision-m
             .Font = New Font("Segoe UI", 10),
             .Location = New Point(20, 45),
             .AutoSize = True
